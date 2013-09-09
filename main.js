@@ -8,6 +8,8 @@ requirejs.config({
 });
 
 require(['numbers', 'bitpack'], function(n, b) {
+        
+    n.test();
     
     var input = 'Hello this is a test. It is quite a long string.';
     

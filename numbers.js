@@ -8,6 +8,7 @@ define(['underscore'], function(_) {
         map = {},
         bestStrategy = {};
 
+    // In lieu of a mature class system, an inheritance mechanism for expressions
     exp.create = function(ctor) {
         ctor.prototype = new exp.base();
         
@@ -18,12 +19,15 @@ define(['underscore'], function(_) {
         };
     };
 
+    // The base expression from which all others are derived
     exp.base = function() {
-        this.isUnitString = function() { return this.getType() === 'unit'; };
         this.getType = function() { throw 'Must override'; }
         this.isAutoParenthesis = function() { return false; };
     };
 
+    // A unit expression, either 0 or 1, created by coercing
+    // an array literal between Array, Number and Boolean types.
+    // All expression trees are comprised of at least one unit expression.
     exp.unit = exp.create(function(val) {
         this.getType = function() { return 'unit'; }
         this.build = function(opts) {
@@ -34,8 +38,10 @@ define(['underscore'], function(_) {
         };
     });
 
-    var PLUS = '+', MINUS = '-', MULTIPLY = '*', DIVIDE = '/';
+    var ADD = '+', SUBTRACT = '-', MULTIPLY = '*', DIVIDE = '/';
 
+    // A binary expression which supports addition, subtraction, multiplication and division.
+    // Most of the power of the efficiency of the number system is derived from these binary expressions.
     exp.binary = exp.create(function(left, op, right) {
         if(typeof left === 'number') {
             left = exp.map(left);
@@ -46,23 +52,25 @@ define(['underscore'], function(_) {
         
         this.getType = function() { return 'binary'; }
         
-        this.isUnitString = function() {
-            return op === PLUS && left.isUnitString() && right.isUnitString();
-        };
-        
         this.build = function(opts) {
             opts = opts || {};
             
-            var isAddition = (op === PLUS);
-            var concatAndUnit = (left.isUnitString() && right.getType() === 'concat') || (left.getType() === 'concat' && right.isUnitString());
+            var isAddition = (op === ADD);
             
-            var l = left.build( { coerce: opts.coerce && (isAddition || concatAndUnit) } ),
-                r = right.build( { coerce: concatAndUnit } );
+            // Only the left operand needs to be explicitly coerced to a number,
+            // and only addition (as it can be confused with concatenation).
+            var l = left.build( { coerce: opts.coerce && isAddition } ),
+                r = right.build( { coerce: false } );
             
-            if(isAddition) {
-                r = concatAndUnit ? '(' + r + ')' : r;
+            // Addition can be safely performed without bracketing sub-expressions,
+            // but not when the right hand side is a concat expression, which can cause
+            // issues with both coercion and syntactic correctness
+            if(isAddition && right.getType() !== 'concat') {
                 return l + op + r;
             } else {
+                // Some sub-expressions will become bracketed 'for free', so we don't need to double up.
+                // Some sub-expressions will only be bracketed 'for free' depending on which side of the binary
+                // expression they are found.
                 l = left.isAutoParenthesis(true) ? l : ( '(' + l + ')' );
                 r = right.isAutoParenthesis(false) ? r : ( '(' + r + ')' );
                 return l + op + r;
@@ -70,6 +78,12 @@ define(['underscore'], function(_) {
         };
     });
 
+    // The concat expression abuses coercion between Arrays and Strings, and Strings to numbers. 
+    // It is a little known fact that single element arrays can be coerced to strings (e.g., ['a'] + 'b' == 'ab').
+    // We can use this to form numbers one decimal digit at a time (e.g., [1]+[0]+[0] == '100')
+    // It is an excellent general case, capable of representing any number, provided that it has at least two digits.
+    // It is also an efficient representation in many cases, although it's complexity does scale linearly with
+    // the number of decimal digits in the number.
     exp.concat = exp.create(function(val) {
         this.isAutoParenthesis = function(isLeft) { return isLeft; };
         this.getType = function() { return 'concat'; }
@@ -105,7 +119,6 @@ define(['underscore'], function(_) {
 
         this.isAutoParenthesis = function(isLeft) { return get().isAutoParenthesis(isLeft); };
         this.getType = function() { return get().getType(); }
-        this.isUnitString = function() { return get().isUnitString(); }
         
         this.build = function(opts) {
             opts = opts || {};
@@ -118,7 +131,6 @@ define(['underscore'], function(_) {
         var defaults = {
             maxPasses: 5,
             skipLarger: false,
-            ignoreMissing: false,
             missingFilter: function(v) { return v <= 10000; }
         };
         
@@ -171,8 +183,8 @@ define(['underscore'], function(_) {
                 b = val - a;
                 if(isCandidate(b)) {
                     // Sometimes the coercion is more efficient by swapping the operands
-                    trySolution(val + '=' + a + '+' + b, exp.binary(expand(a), PLUS, expand(b))); 
-                    trySolution(val + '=' + b + '+' + a, exp.binary(expand(b), PLUS, expand(a))); 
+                    trySolution(val + '=' + a + '+' + b, exp.binary(expand(a), ADD, expand(b))); 
+                    trySolution(val + '=' + b + '+' + a, exp.binary(expand(b), ADD, expand(a))); 
                 }
             }
             
@@ -193,7 +205,7 @@ define(['underscore'], function(_) {
                     // val = a - b
                     b = -(val - a);
                     if(isCandidate(b)) {
-                        trySolution(val + '=' + a + '-' + b, exp.binary(expand(a), MINUS, expand(b))); 
+                        trySolution(val + '=' + a + '-' + b, exp.binary(expand(a), SUBTRACT, expand(b))); 
                     }
                 }
                 
@@ -211,11 +223,6 @@ define(['underscore'], function(_) {
             bestStrategy[val] = winner.name;
             return winner.expr;
         };
-        
-        if(options.ignoreMissing) {
-            map[value] = pass(value);
-            return;
-        }
         
         for(var i = 0; i < options.maxPasses; i++) {
             map[value] = pass(value);
@@ -243,22 +250,25 @@ define(['underscore'], function(_) {
         
         map[0] = exp.unit(0);
         map[1] = exp.unit(1);
-        map[2] = exp.binary(1, PLUS, 1);
-        map[3] = exp.binary(1, PLUS, 2);
-        map[4] = exp.binary(2, PLUS, 2);
+        map[2] = exp.binary(1, ADD, 1);
+        map[3] = exp.binary(1, ADD, 2);
+        map[4] = exp.binary(2, ADD, 2);
         map[5] = exp.binary(10, DIVIDE, 2);
         map[6] = exp.binary(3, MULTIPLY, 2);
-        map[7] = exp.binary(10, MINUS, 3);
-        map[8] = exp.binary(10, MINUS, 2);
-        map[9] = exp.binary(10, MINUS, 1);
+        map[7] = exp.binary(10, SUBTRACT, 3);
+        map[8] = exp.binary(10, SUBTRACT, 2);
+        map[9] = exp.binary(10, SUBTRACT, 1);
         map[10] = exp.concat(10);
-
+        
+        // Start by filling out the base map in a strictly incrementing fashion,
+        // ignoring any candidates involving larger numbers.
         for(var i = 11; i <= BASE_MAP_SIZE; i++) {
             exp.chooseBest(i, { maxPasses: 1, skipLarger: true });
         }
         
+        // Perform a second pass, this time considering larger candidates
         for(var i = 11; i <= BASE_MAP_SIZE; i++) {
-            exp.chooseBest(i, { maxPasses: 1, ignoreMissing: true });
+            exp.chooseBest(i, { maxPasses: 1 });
         }
 
     };
