@@ -22,6 +22,7 @@ define(['underscore'], function(_) {
     // The base expression from which all others are derived
     exp.base = function() {
         this.getType = function() { throw 'Must override'; }
+        this.build = function() { throw 'Must override'; }
         this.isAutoParenthesis = function() { return false; };
     };
 
@@ -43,36 +44,33 @@ define(['underscore'], function(_) {
     // A binary expression which supports addition, subtraction, multiplication and division.
     // Most of the power of the efficiency of the number system is derived from these binary expressions.
     exp.binary = exp.create(function(left, op, right) {
-        if(typeof left === 'number') {
-            left = exp.map(left);
-        }
-        if(typeof right === 'number') {
-            right = exp.map(right);
-        }
         
         this.getType = function() { return 'binary'; }
         
         this.build = function(opts) {
             opts = opts || {};
             
+            var leftExpr = (typeof left === 'number') ? exp.map(left) : left,
+                rightExpr = (typeof left === 'number') ? exp.map(right) : right;
+            
             var isAddition = (op === ADD);
             
             // Only the left operand needs to be explicitly coerced to a number,
             // and only addition (as it can be confused with concatenation).
-            var l = left.build( { coerce: opts.coerce && isAddition } ),
-                r = right.build( { coerce: false } );
+            var l = leftExpr.build( { coerce: opts.coerce && isAddition } ),
+                r = rightExpr.build( { coerce: false } );
             
             // Addition can be safely performed without bracketing sub-expressions,
             // but not when the right hand side is a concat expression, which can cause
             // issues with both coercion and syntactic correctness
-            if(isAddition && right.getType() !== 'concat') {
+            if(isAddition && rightExpr.getType() !== 'concat') {
                 return l + op + r;
             } else {
                 // Some sub-expressions will become bracketed 'for free', so we don't need to double up.
                 // Some sub-expressions will only be bracketed 'for free' depending on which side of the binary
                 // expression they are found.
-                l = left.isAutoParenthesis(true) ? l : ( '(' + l + ')' );
-                r = right.isAutoParenthesis(false) ? r : ( '(' + r + ')' );
+                l = leftExpr.isAutoParenthesis(true) ? l : ( '(' + l + ')' );
+                r = rightExpr.isAutoParenthesis(false) ? r : ( '(' + r + ')' );
                 return l + op + r;
             }
         };
@@ -107,24 +105,24 @@ define(['underscore'], function(_) {
             return result;
         };
     });
-
-    exp.map = exp.create(function(val) {
-        var get = function() {
-            if(map[val] === undefined) {
-                exp.chooseBest(val);
-            }
-            
-            return map[val];
+    
+    // An expression proxy. The expression will be lazily initialised once any method is called.
+    exp.lazy = exp.create(function(val) {
+        var memo = null;
+        var init = function() {
+            !map[val] && exp.chooseBest(val);
+            memo = map[val];
         };
-
-        this.isAutoParenthesis = function(isLeft) { return get().isAutoParenthesis(isLeft); };
-        this.getType = function() { return get().getType(); }
         
-        this.build = function(opts) {
-            opts = opts || {};
-            return get().build(opts);
-        };
+        this.isAutoParenthesis = function(isLeft) { init(); return memo.isAutoParenthesis(isLeft);  };
+        this.getType = function() { init(); return memo.getType(); };
+        this.build = function(opts) { init(); return memo.build(opts); };
     });
+    
+    // Get the expression for a value from the map, or return a lazily initialised proxy if it doesn't exist.
+    exp.map = function(val) {
+        return map[val] || exp.lazy(val);
+    };
 
     exp.chooseBest = function(value, options) {
     
