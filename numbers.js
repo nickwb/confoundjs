@@ -7,6 +7,13 @@ define(['underscore'], function(_) {
     var exp = {},
         map = {},
         bestStrategy = {};
+        
+    var ADD = '+', SUBTRACT = '-', MULTIPLY = '*', DIVIDE = '/';
+    var operatorPrecedence = {};
+    
+    _.each([DIVIDE, MULTIPLY, ADD, SUBTRACT], function(o, i) {
+        operatorPrecedence[o] = i + 1;
+    });
 
     // In lieu of a mature class system, an inheritance mechanism for expressions
     exp.create = function(ctor) {
@@ -24,12 +31,15 @@ define(['underscore'], function(_) {
         this.getType = function() { throw 'Must override'; }
         this.build = function() { throw 'Must override'; }
         this.isAutoParenthesis = function() { return false; };
+        this.isAssociative = function() { return true; };
+        this.getOperatorPrecedence = function() { return 0; };
     };
 
     // A unit expression, either 0 or 1, created by coercing
     // an array literal between Array, Number and Boolean types.
     // All expression trees are comprised of at least one unit expression.
     exp.unit = exp.create(function(val) {
+        this.getOperatorPrecedence = function() { return operatorPrecedence[ADD]; };
         this.getType = function() { return 'unit'; }
         this.build = function(opts) {
             opts = opts || {};
@@ -39,40 +49,53 @@ define(['underscore'], function(_) {
         };
     });
 
-    var ADD = '+', SUBTRACT = '-', MULTIPLY = '*', DIVIDE = '/';
-
     // A binary expression which supports addition, subtraction, multiplication and division.
     // Most of the power of the efficiency of the number system is derived from these binary expressions.
     exp.binary = exp.create(function(left, op, right) {
         
         this.getType = function() { return 'binary'; }
+        this.getOperatorPrecedence = function() { return operatorPrecedence[op]; };
+        this.isAssociative = function() { return op === ADD || op === MULTIPLY };
         
         this.build = function(opts) {
             opts = opts || {};
             
+            // Map each operand if necessary
             var leftExpr = (typeof left === 'number') ? exp.map(left) : left,
                 rightExpr = (typeof left === 'number') ? exp.map(right) : right;
             
-            var isAddition = (op === ADD);
-            
             // Only the left operand needs to be explicitly coerced to a number,
             // and only addition (as it can be confused with concatenation).
-            var l = leftExpr.build( { coerce: opts.coerce && isAddition } ),
-                r = rightExpr.build( { coerce: false } );
+            var leftCoerce = opts.coerce && (op === ADD),
+                rightCoerce = false;
             
-            // Addition can be safely performed without bracketing sub-expressions,
-            // but not when the right hand side is a concat expression, which can cause
-            // issues with both coercion and syntactic correctness
-            if(isAddition && rightExpr.getType() !== 'concat') {
-                return l + op + r;
-            } else {
-                // Some sub-expressions will become bracketed 'for free', so we don't need to double up.
-                // Some sub-expressions will only be bracketed 'for free' depending on which side of the binary
-                // expression they are found.
-                l = leftExpr.isAutoParenthesis(true) ? l : ( '(' + l + ')' );
-                r = rightExpr.isAutoParenthesis(false) ? r : ( '(' + r + ')' );
-                return l + op + r;
+            // Determine if each sub-expression requires parenthesis.
+            // Parenthesis are required if our operation is not associative,
+            // or the operation at the root of the sub-tree is not associative,
+            // or our operator precedence will change the meaning of the expression.
+            var leftRequiresParenthesis =   !this.isAssociative()
+                                            || !leftExpr.isAssociative(leftCoerce, op)
+                                            || this.getOperatorPrecedence() < leftExpr.getOperatorPrecedence();
+                                            
+            var rightRequiresParenthesis =  !this.isAssociative()
+                                            || !rightExpr.isAssociative(rightCoerce, op)
+                                            || this.getOperatorPrecedence() < rightExpr.getOperatorPrecedence();
+            
+            
+            // Build each sub-expression
+            var leftSymbolic = leftExpr.build( { coerce: leftCoerce } ),
+                rightSymbolic = rightExpr.build( { coerce: rightCoerce } );
+                
+            // Apply parenthesis if necessary
+            if(leftRequiresParenthesis && !leftExpr.isAutoParenthesis(true)) {
+                leftSymbolic = '(' + leftSymbolic + ')';
             }
+            
+            if(rightRequiresParenthesis && !rightExpr.isAutoParenthesis(false)) {
+                rightSymbolic = '(' + rightSymbolic + ')';
+            }
+            
+            return leftSymbolic + op + rightSymbolic;
         };
     });
 
@@ -84,7 +107,9 @@ define(['underscore'], function(_) {
     // the number of decimal digits in the number.
     exp.concat = exp.create(function(val) {
         this.isAutoParenthesis = function(isLeft) { return isLeft; };
+        this.isAssociative = function(isCoerced, outerOperator) { return !isCoerced && outerOperator !== ADD; };
         this.getType = function() { return 'concat'; }
+        
         this.build = function(opts) {
             opts = opts || {};
             
@@ -115,6 +140,7 @@ define(['underscore'], function(_) {
         };
         
         this.isAutoParenthesis = function(isLeft) { init(); return memo.isAutoParenthesis(isLeft);  };
+        this.isAssociative = function(isCoerced, outerOperator) { init(); return memo.isAssociative(isCoerced, outerOperator); };
         this.getType = function() { init(); return memo.getType(); };
         this.build = function(opts) { init(); return memo.build(opts); };
     });
