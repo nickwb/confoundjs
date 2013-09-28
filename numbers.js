@@ -39,7 +39,6 @@ define(['underscore'], function(_) {
     // an array literal between Array, Number and Boolean types.
     // All expression trees are comprised of at least one unit expression.
     exp.unit = exp.create(function(val) {
-        this.getOperatorPrecedence = function() { return operatorPrecedence[ADD]; };
         this.getType = function() { return 'unit'; }
         this.build = function(opts) {
             opts = opts || {};
@@ -53,9 +52,20 @@ define(['underscore'], function(_) {
     // Most of the power of the efficiency of the number system is derived from these binary expressions.
     exp.binary = exp.create(function(left, op, right) {
         
+        var self = this;
+        
         this.getType = function() { return 'binary'; }
         this.getOperatorPrecedence = function() { return operatorPrecedence[op]; };
         this.isAssociative = function() { return op === ADD || op === MULTIPLY };
+        
+        var doesNeedParenthesis = function(expr, isCoerced) {            
+            // Parenthesis are required if our operation is not associative,
+            // or the operation at the root of the sub-tree is not associative,
+            // or our operator precedence will change the meaning of the expression.
+            return  !self.isAssociative()
+                    || !expr.isAssociative(isCoerced, op)
+                    || self.getOperatorPrecedence() < expr.getOperatorPrecedence();
+        };
         
         this.build = function(opts) {
             opts = opts || {};
@@ -70,17 +80,12 @@ define(['underscore'], function(_) {
                 rightCoerce = false;
             
             // Determine if each sub-expression requires parenthesis.
-            // Parenthesis are required if our operation is not associative,
-            // or the operation at the root of the sub-tree is not associative,
-            // or our operator precedence will change the meaning of the expression.
-            var leftRequiresParenthesis =   !this.isAssociative()
-                                            || !leftExpr.isAssociative(leftCoerce, op)
-                                            || this.getOperatorPrecedence() < leftExpr.getOperatorPrecedence();
-                                            
-            var rightRequiresParenthesis =  !this.isAssociative()
-                                            || !rightExpr.isAssociative(rightCoerce, op)
-                                            || this.getOperatorPrecedence() < rightExpr.getOperatorPrecedence();
+            var leftRequiresParenthesis = doesNeedParenthesis(leftExpr, leftCoerce); 
+            var rightRequiresParenthesis = doesNeedParenthesis(rightExpr, rightCoerce);
             
+            if(leftExpr.getType() === 'unit' && rightExpr.getType() === 'concat' && op === ADD) {
+                leftRequiresParenthesis = true;
+            }
             
             // Build each sub-expression
             var leftSymbolic = leftExpr.build( { coerce: leftCoerce } ),
