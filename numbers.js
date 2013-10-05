@@ -7,11 +7,11 @@ define(['underscore'], function(_) {
     var exp = {},
         map = {};
         
-    var ADD = '+', SUBTRACT = '-', MULTIPLY = '*', DIVIDE = '/';
+    var ADD = '+', SUBTRACT = '-', MULTIPLY = '*', DIVIDE = '/', LSHIFT = '<<', RSHIFT = '>>';
     var operatorPrecedence = {};
     
     // Create a map of the operator precedence
-    _.each([DIVIDE, MULTIPLY, ADD, SUBTRACT], function(o, i) {
+    _.each([DIVIDE, MULTIPLY, ADD, SUBTRACT, LSHIFT, RSHIFT], function(o, i) {
         operatorPrecedence[o] = i + 1;
     });
 
@@ -124,6 +124,8 @@ define(['underscore'], function(_) {
             if(op === SUBTRACT)     return leftOperand - rightOperand;
             if(op === MULTIPLY)     return leftOperand * rightOperand;
             if(op === DIVIDE)       return leftOperand / rightOperand;
+            if(op === LSHIFT)       return leftOperand << rightOperand;
+            if(op === RSHIFT)       return leftOperand >> rightOperand;
         };
         
         var makeChildParams = function(params, isLeft) {
@@ -312,6 +314,20 @@ define(['underscore'], function(_) {
                 b = val / a;
                 if(isCandidate(b)) {
                     trySolution(exp.binary(expand(a), MULTIPLY, expand(b)));
+                    
+                    // val = a << b
+                    b = Math.log(b)/Math.log(2);
+                    if(isCandidate(b)) {
+                        trySolution(exp.binary(expand(a), LSHIFT, expand(b)));
+                    }
+                    
+                    // Multiplications are commutative but shifts are not
+                    // val = b << a
+                    b = val / a;
+                    a = Math.log(a)/Math.log(2);
+                    if(isCandidate(a)) {
+                       trySolution(exp.binary(expand(b), LSHIFT, expand(a)));
+                    }
                 }
             }
             
@@ -331,8 +347,12 @@ define(['underscore'], function(_) {
                     b = i;        
                     // val = a / b
                     a = val * b;
+                    trySolution(exp.binary(expand(a), DIVIDE, expand(b))); 
+                    
+                    // val = a >> b
+                    b = Math.log(b)/Math.log(2);
                     if(isCandidate(b)) {
-                        trySolution(exp.binary(expand(a), DIVIDE, expand(b))); 
+                        trySolution(exp.binary(expand(a), RSHIFT, expand(b)));
                     }
                 }
             }
@@ -369,8 +389,8 @@ define(['underscore'], function(_) {
         map[2] = exp.binary(1, ADD, 1);
         map[3] = exp.binary(1, ADD, 2);
         map[4] = exp.binary(2, ADD, 2);
-        map[5] = exp.binary(10, DIVIDE, 2);
-        map[6] = exp.binary(3, MULTIPLY, 2);
+        map[5] = exp.binary(10, RSHIFT, 1);
+        map[6] = exp.binary(3, LSHIFT, 1);
         map[7] = exp.binary(10, SUBTRACT, 3);
         map[8] = exp.binary(10, SUBTRACT, 2);
         map[9] = exp.binary(10, SUBTRACT, 1);
@@ -406,6 +426,7 @@ define(['underscore'], function(_) {
     };
     
     module.test = function() {
+        var testStart = new Date();
         initialiseMap();
         
         var pad = function(direction, input, width) {
@@ -436,7 +457,10 @@ define(['underscore'], function(_) {
                 console.log('FAIL ' + info);
             }
         }
-        console.log('TOTAL: ' + total + ' chars.'); 
+        console.log('TOTAL: ' + total + ' chars.');
+        
+        var testTime = new Date().getTime() - testStart.getTime();
+        console.log('Test Time: ' + testTime + 'ms');
     };   
     
     return module;
