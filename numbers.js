@@ -68,7 +68,6 @@ define(['underscore'], function(_) {
         this.isAtomic = false;
         this.isAssociative = true;
         this.operatorPrecedence = 0;
-        this.containsConcat = false;
         this.hasParenthesis = false;
     });
 
@@ -143,8 +142,6 @@ define(['underscore'], function(_) {
         
         this.build = function(params) {
             
-            var binaryResult = exp.buildResult();
-            
             // Map each operand if necessary
             var leftExpr = (typeof left === 'number') ? exp.map(left) : left,
                 rightExpr = (typeof left === 'number') ? exp.map(right) : right;
@@ -174,13 +171,19 @@ define(['underscore'], function(_) {
                 rightResult.symbolic = '(' + rightResult.symbolic + ')';
             }
             
+            // Re-use the left result object
+            var binaryResult = leftResult;
+            
+            binaryResult.type = 'binary';
             binaryResult.numeric = evaluateNumeric(leftResult.numeric, rightResult.numeric);
-            binaryResult.strategy = String(leftResult.numeric) + op + String(rightResult.numeric);
             binaryResult.symbolic = leftResult.symbolic + op + rightResult.symbolic;
-            binaryResult.operatorPrecedence = myPrecedence;
-            binaryResult.isAssociative = myAssociativity;
-            binaryResult.containsConcat = leftResult.containsConcat || rightResult.containsConcat;
+            binaryResult.strategy = String(leftResult.numeric) + op + String(rightResult.numeric);
             binaryResult.leafiness = 1 + Math.max(leftResult.leafiness, rightResult.leafiness);
+            binaryResult.isAtomic = false;
+            binaryResult.isAssociative = myAssociativity;
+            binaryResult.operatorPrecedence = myPrecedence;
+            binaryResult.hasParenthesis = false;
+            
             
             return binaryResult;
         };
@@ -197,34 +200,38 @@ define(['underscore'], function(_) {
         this.build = function(params) {
         
             var digits = String(val).split(''),
-                parts = [],
-                result = exp.buildResult(),
+                maxLeafiness = 0,
+                symbolic = '',
+                result,
                 childParams,
-                symbolic,
+                part,
                 i;
                 
             for(i = 0; i < digits.length; i++) {
+                if(i !== 0) { symbolic += '+'; }
                 childParams = params.createChild({ coerce: true });
-                parts.push( exp.map( Number(digits[i]) ).build(childParams) );
+                part = exp.map( Number(digits[i]) ).build(childParams);
+                symbolic += '[' + part.symbolic + ']';
+                maxLeafiness = Math.max(maxLeafiness, part.leafiness);
+                
+                // Reuse the final result object
+                result = part;
             }
             
-            // Build the symbolic representation
-            symbolic = _.map(parts, function(r) { return '[' + r.symbolic + ']'; });
-            symbolic = '(' + symbolic.join('+') + ')';
+            symbolic = '(' + symbolic + ')';
             if(params.coerce) {
                 symbolic = '+' + symbolic;
             }
             
-            
             result.type = 'concat';
-            result.symbolic = symbolic;
             result.numeric = val;
+            result.symbolic = symbolic;
             result.strategy = 'concat_' + val;
-            result.leafiness = 1 + _.reduce(parts, function(max, r) { return Math.max(r.leafiness, max); }, 0);
-            result.containsConcat = true;
-            result.isAssociative = params.isCoerced === false && params.parentOperator !== ADD;
-            result.hasParenthesis = params.isLeftOperand;
+            result.leafiness = 1 + maxLeafiness;
             result.isAtomic = result.hasParenthesis;
+            result.isAssociative = params.isCoerced === false && params.parentOperator !== ADD;
+            result.operatorPrecedence = 0;
+            result.hasParenthesis = params.isLeftOperand;
             
             return result;
         };
