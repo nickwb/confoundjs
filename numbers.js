@@ -175,15 +175,14 @@ define(['underscore'], function(_) {
             var binaryResult = leftResult;
             
             binaryResult.type = 'binary';
+            binaryResult.strategy = String(leftResult.numeric) + op + String(rightResult.numeric);
             binaryResult.numeric = evaluateNumeric(leftResult.numeric, rightResult.numeric);
             binaryResult.symbolic = leftResult.symbolic + op + rightResult.symbolic;
-            binaryResult.strategy = String(leftResult.numeric) + op + String(rightResult.numeric);
             binaryResult.leafiness = 1 + Math.max(leftResult.leafiness, rightResult.leafiness);
             binaryResult.isAtomic = false;
             binaryResult.isAssociative = myAssociativity;
             binaryResult.operatorPrecedence = myPrecedence;
             binaryResult.hasParenthesis = false;
-            
             
             return binaryResult;
         };
@@ -427,7 +426,7 @@ define(['underscore'], function(_) {
             throw 'Symbolic representation did not match expected value.';
         }
         
-        console.log(result.strategy);
+        console.log(val + ': ' + result.strategy + ' (' + result.leafiness + ' deep)');
         
         return symbolic;
     };
