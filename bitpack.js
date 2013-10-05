@@ -2,7 +2,10 @@ define(['underscore'], function(_) {
 
     var module = {};
     
-    var PACK_WIDTH = 2,
+    // PACK_WIDTH can be in the range of 1-4.
+    // The choice of this value is determined by the efficiency of the numbers engine.
+    // Larger PACK_WIDTHs require larger numbers to be represented by the numbers engine.
+    var PACK_WIDTH = 3,
         CHAR_MIN = 32,
         CHAR_MAX = 126;
     
