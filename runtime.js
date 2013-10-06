@@ -51,7 +51,9 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
         var reservations = [],
             state;
             
-        this.variable = '_';
+            
+        var variableCandidates = ['\u01AA', '\u018D', '\u0283', '\u03BE'];
+        this.variable = null;
         
         this.reserve = function(name) {
             reservations.push(name);
@@ -60,6 +62,7 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
         this.resetState = function() {
             state = {};
             reservations = _.sortBy(reservations, function(r) {  return Math.random(); });
+            this.variable = variableCandidates[Math.floor(Math.random() * variableCandidates.length)];
         };
         
         this.getReference = function(name) {
