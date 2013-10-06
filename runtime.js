@@ -6,12 +6,13 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
         if(module.initialised) { return };
         module.initialised = true;
         
-        //module.hashCode = (new Function('return ' + module.writeHashCodeFn() +';'))();
         stateTable = new stateTable();
         
         stateTable.reserve('strLength');
         stateTable.reserve('strCharCodeAt');
         stateTable.reserve('fnHashCode');
+        stateTable.reserve('fnPluck');
+        stateTable.reserve('global');
     };
     
     
@@ -77,7 +78,6 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
         
         this.writeAll = function() {
             var js = '';
-            js += this.variable + '={};';
             
             for(var i = 0; i < reservations.length; i++) {
                 js += this.variable + '[' + numbers.getSymbolic(i) + ']=' + state[i] + ';';
@@ -86,6 +86,16 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
             return js;
         };
         
+    };
+    
+    module.getHashCode = function(s) {
+        var hash = 0, i, c;
+        for (i = 0; i < s.length; i++) {
+            c = s.charCodeAt(i);
+            hash = ((hash<<5)-hash)+c;
+            hash |= 0;
+        }
+        return hash;
     };
 
     module.writeHashCodeFn = function() {
@@ -123,6 +133,35 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
         return js;
     };
     
+    
+    module.writePluckFn = function() {
+        
+        var variables = new variableMap();
+            variables.make('p', 'haystack', 'needle');
+        
+        
+        var js = '';
+        
+        js += 'function(#haystack~,#needle~,#p~){';
+        js += 'for(#p~ in #haystack~){';
+        js += 'if(#needle~==' + stateTable.getReference('fnHashCode') + '(#p~))';
+        js += 'return #haystack~[#p~]';
+        js += '}';
+        js += '}';
+        
+        js = variables.substitute(js);
+        
+        return js;
+    };
+    
+    module.writePlucker = function(haystack, needle) {
+        return stateTable.getReference('fnPluck') + '(' + haystack + ',' + numbers.getSymbolic(module.getHashCode(needle)) + ')';
+    };
+    
+    module.writeGlobal = function() {
+        return 'Function(' + strings.obscureString('return this') + ')()';
+    };
+    
     module.generateRuntime = function(payload) {
         initialise();
         
@@ -130,13 +169,15 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
         stateTable.setState('strLength', strings.obscureString('length'));
         stateTable.setState('strCharCodeAt', strings.obscureString('charCodeAt'));
         stateTable.setState('fnHashCode', module.writeHashCodeFn());
+        stateTable.setState('fnPluck', module.writePluckFn());
+        stateTable.setState('global', module.writeGlobal());
         
         var js = '';
         
         js += '(function(' + stateTable.variable + '){';
         js += stateTable.writeAll();
-        js += 'return ' + stateTable.getReference('fnHashCode') + "('abc');"
-        js += '})();';
+        js += 'return ' + module.writePlucker(stateTable.getReference('global'), 'alert') + '("Hi!");';
+        js += '})({});';
         
         return js;
     };
