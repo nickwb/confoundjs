@@ -6,8 +6,12 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
         if(module.initialised) { return };
         module.initialised = true;
         
-        module.hashCode = (new Function('return ' + module.writeHashCodeFn() +';'))();
-        module.stateTable = new module.stateTable();
+        //module.hashCode = (new Function('return ' + module.writeHashCodeFn() +';'))();
+        stateTable = new stateTable();
+        
+        stateTable.reserve('strLength');
+        stateTable.reserve('strCharCodeAt');
+        stateTable.reserve('fnHashCode');
     };
     
     
@@ -42,9 +46,41 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
         };
     };
     
-    module.stateTable = function() {
+    var stateTable = function() {
+    
+        var reservations = [],
+            state;
+            
+        this.variable = '_';
         
         this.reserve = function(name) {
+            reservations.push(name);
+        };
+        
+        this.resetState = function() {
+            state = {};
+            reservations = _.sortBy(reservations, function(r) {  return Math.random(); });
+        };
+        
+        this.getReference = function(name) {
+            var idx = _.indexOf(reservations, name);
+            return this.variable + '[' + numbers.getSymbolic(idx) + ']';
+        };
+        
+        this.setState = function(name, val) {
+            var idx = _.indexOf(reservations, name);
+            state[idx] = val;
+        };
+        
+        this.writeAll = function() {
+            var js = '';
+            js += this.variable + '={};';
+            
+            for(var i = 0; i < reservations.length; i++) {
+                js += this.variable + '[' + numbers.getSymbolic(i) + ']=' + state[i] + ';';
+            }
+            
+            return js;
         };
         
     };
@@ -63,14 +99,14 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
         // Initialise the accumulator and the hash code to zero
         js += '#i~=#hashCode~=(+!!#hashCode~);';
         // Get the string length
-        js += '#length~=#input~[' + strings.obscureString('length') + '];';
+        js += '#length~=#input~[' + stateTable.getReference('strLength') + '];';
         // Iterate through each character in the string
         js += 'for(;#i~<#length~;#i~++){';
         // Add the current character to the hash and truncate to 32 bits
         js += '#hashCode~=' +
                 '(' +
                     '((#hashCode~<<(' + numbers.getSymbolic(5) + '))-#hashCode~)' +
-                    '+#input~[' + strings.obscureString('charCodeAt') + '](#i~)' +
+                    '+#input~[' + stateTable.getReference('strCharCodeAt') + '](#i~)' +
                 ')' +
                 '|(' + numbers.getSymbolic(0) + ')';
         // End iteration
@@ -87,10 +123,19 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
     module.generateRuntime = function(payload) {
         initialise();
         
+        stateTable.resetState();
+        stateTable.setState('strLength', strings.obscureString('length'));
+        stateTable.setState('strCharCodeAt', strings.obscureString('charCodeAt'));
+        stateTable.setState('fnHashCode', module.writeHashCodeFn());
+        
         var js = '';
         
-        js += '(function(){';
+        js += '(function(' + stateTable.variable + '){';
+        js += stateTable.writeAll();
+        js += 'return ' + stateTable.getReference('fnHashCode') + "('abc');"
         js += '})();';
+        
+        return js;
     };
     
     return module;
