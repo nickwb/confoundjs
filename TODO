@@ -1,0 +1,2 @@
+* Pass eval to the unpacker so that the return value of the unpacker is less of a reverse engineering target.
+* Fewer functions - perhaps rationalise the 'constructor', 'Function' and 'global' functions in to one.
