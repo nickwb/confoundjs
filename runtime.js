@@ -9,6 +9,8 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         stateTable = new stateTable();
         
         stateTable.reserve('strLength');
+        stateTable.reserve('strConstructor');
+        stateTable.reserve('fnFunction');
         stateTable.reserve('global');
         stateTable.reserve('fnFromCharCode');
         stateTable.reserve('fnUnpack');
@@ -91,12 +93,16 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
     };
     
     
+    module.writeFunction = function() {
+        return 'function(){return [][' + strings.obscureString('join') + '][' + stateTable.getReference('strConstructor') + ']}';
+    };
+    
     module.writeGlobal = function() {
-        return 'Function(' + strings.obscureString('return this') + ')()';
+        return 'function(){return '+ stateTable.getReference('fnFunction') +'(' + strings.obscureString('return this') + ')()}';
     };
     
     module.writeFromCharCode = function() {
-        return '([]+[])[' + strings.obscureString('constructor') + '][' + strings.obscureString('fromCharCode')  + ']';
+        return 'function(){return ([]+[])[' + stateTable.getReference('strConstructor') + '][' + strings.obscureString('fromCharCode')  + ']}';
     };
     
     module.writeUnpacker = function() {
@@ -158,6 +164,8 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         
         stateTable.resetState();
         stateTable.setState('strLength', strings.obscureString('length'));
+        stateTable.setState('strConstructor', strings.obscureString('constructor'));
+        stateTable.setState('fnFunction', module.writeFunction());
         stateTable.setState('global', module.writeGlobal());
         stateTable.setState('fnFromCharCode', module.writeFromCharCode());
         stateTable.setState('fnUnpack', module.writeUnpacker());
@@ -171,11 +179,19 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         stateTable.setState('payload', packed);
         stateTable.setState('key', numbers.getSymbolic(key));
         
+        var realise = function(reference) {
+            reference = stateTable.getReference(reference);
+            return reference + '=' + reference + '();'
+        };
+        
         var js = '';
         
         js += '(function(' + stateTable.variable + '){';
         js += stateTable.writeAll();
-        js += stateTable.getReference('fnEvalute') + '(' + stateTable.getReference('payload') + ',' + stateTable.getReference('key') + ');';
+        js += realise('fnFromCharCode');
+        js += realise('fnFunction');
+        js += realise('global');
+        js += stateTable.getReference('fnEvalute') + '(' + stateTable.getReference('payload') + ',' + stateTable.getReference('key') + ')';
         js += '})({});';
         
         return js;
