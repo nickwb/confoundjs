@@ -30,10 +30,18 @@ define(['underscore'], function(_) {
         return str;
     };
     
-    module.pack = function(str) {
+    module.randomKey = function() {
+        return Math.floor(Math.random() * (1 << (PACK_WIDTH * 7)));
+    };
+    
+    var spinKey = function(key, cipherBlock) {
+        return (cipherBlock >> 3) ^ key;
+    };
+    
+    module.pack = function(str, key) {
         str = String(str);
         
-        var i, c;
+        var block, i, c;
         for(i = 0; i < str.length; i++) {
             c = str.charCodeAt(i);
             if(c < CHAR_MIN || c > CHAR_MAX) { throw 'Invalid character in input.'; }
@@ -41,30 +49,39 @@ define(['underscore'], function(_) {
         
         var result = [ str.length % PACK_WIDTH ];
         for(var i = 0; i < str.length; i+=PACK_WIDTH) {
-            result.push(packer(str.substr(i, PACK_WIDTH)));
+            block = packer(str.substr(i, PACK_WIDTH)) ^ key;
+            key = spinKey(key, block);
+            result.push(block);
         }
         
         return result;
     };
     
-    module.unpack = function(arr) {
+    module.unpack = function(arr, key) {
         var lastBlockLength = arr[0];
         var result = '';
+        var block;
         
         for(var i = 1; i < arr.length - 1; i++) {
-            result += unpacker(arr[i]);
+            block = arr[i];
+            result += unpacker(block ^ key);
+            key = spinKey(key, block);
         }
         
-        result += unpacker(arr[arr.length - 1], lastBlockLength);
+        result += unpacker(arr[arr.length - 1] ^ key, lastBlockLength);
         
         return result;
     };
+    
+    module.packWidth = PACK_WIDTH;
+    module.charMin = CHAR_MIN;
     
     module.test = function() {
         var input = 'This is a test string';
-        var packed = module.pack(input);
+        var key = randomKey();
+        var packed = module.pack(input, key);
         console.log(packed);
-        var unpacked = module.unpack(packed);
+        var unpacked = module.unpack(packed, key);
         console.log(unpacked);
     };
     

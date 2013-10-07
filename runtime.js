@@ -1,4 +1,4 @@
-define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
+define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, strings, bitpack, _) {
 
     var module = {};
     
@@ -9,15 +9,17 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
         stateTable = new stateTable();
         
         stateTable.reserve('strLength');
-        stateTable.reserve('strCharCodeAt');
-        stateTable.reserve('fnHashCode');
-        stateTable.reserve('fnPluck');
         stateTable.reserve('global');
+        stateTable.reserve('fnFromCharCode');
+        stateTable.reserve('fnUnpack');
+        stateTable.reserve('payload');
+        stateTable.reserve('key');
+        stateTable.reserve('fnEvalute');
     };
     
     
     var variableMap = function() {
-        var characterSet = ['\u03DF', '\u1D24', '\u0394', '\u02AD', '\u0465', '\u04E3', '\u0549', '\u1D77'];
+        var characterSet = ['\u03DF', '\u1D24', '\u0394', '\u02AD', '\u0465', '\u04E3', '\u0549', '\u1D77', '\u0194'];
         characterSet = _.sortBy(characterSet, function(c) {  return Math.random(); });
         
         var map = {};
@@ -88,78 +90,67 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
         
     };
     
-    module.getHashCode = function(s) {
-        var hash = 0, i, c;
-        for (i = 0; i < s.length; i++) {
-            c = s.charCodeAt(i);
-            hash = ((hash<<5)-hash)+c;
-            hash |= 0;
-        }
-        return hash;
-    };
-
-    module.writeHashCodeFn = function() {
-        
-        var variables = new variableMap();
-            variables.make('i', 'hashCode', 'input', 'length');
-        
-        
-        var js = '';
-        
-        // The first argument is the input string,
-        // The rest are variable declarations
-        js += 'function(#input~,#hashCode~,#length~,#i~){';
-        // Initialise the accumulator and the hash code to zero
-        js += '#i~=#hashCode~=(+!!#hashCode~);';
-        // Get the string length
-        js += '#length~=#input~[' + stateTable.getReference('strLength') + '];';
-        // Iterate through each character in the string
-        js += 'for(;#i~<#length~;#i~++){';
-        // Add the current character to the hash and truncate to 32 bits
-        js += '#hashCode~=' +
-                '(' +
-                    '((#hashCode~<<(' + numbers.getSymbolic(5) + '))-#hashCode~)' +
-                    '+#input~[' + stateTable.getReference('strCharCodeAt') + '](#i~)' +
-                ')' +
-                '|(' + numbers.getSymbolic(0) + ')';
-        // End iteration
-        js += '}';
-        // Return the result
-        js += 'return #hashCode~';
-        js += '}';
-        
-        js = variables.substitute(js);
-        
-        return js;
-    };
-    
-    
-    module.writePluckFn = function() {
-        
-        var variables = new variableMap();
-            variables.make('p', 'haystack', 'needle');
-        
-        
-        var js = '';
-        
-        js += 'function(#haystack~,#needle~,#p~){';
-        js += 'for(#p~ in #haystack~){';
-        js += 'if(#needle~==' + stateTable.getReference('fnHashCode') + '(#p~))';
-        js += 'return #haystack~[#p~]';
-        js += '}';
-        js += '}';
-        
-        js = variables.substitute(js);
-        
-        return js;
-    };
-    
-    module.writePlucker = function(haystack, needle) {
-        return stateTable.getReference('fnPluck') + '(' + haystack + ',' + numbers.getSymbolic(module.getHashCode(needle)) + ')';
-    };
     
     module.writeGlobal = function() {
         return 'Function(' + strings.obscureString('return this') + ')()';
+    };
+    
+    module.writeFromCharCode = function() {
+        return '([]+[])[' + strings.obscureString('constructor') + '][' + strings.obscureString('fromCharCode')  + ']';
+    };
+    
+    module.writeUnpacker = function() {
+        var variables = new variableMap();
+            variables.make('payload', 'key', 'i', 'j', 'chars', 'block', 'cipherBlock', 'result', 'lastBlockLength');
+        
+        
+        var js = '';
+        
+        // The first two arguments are the required parameters
+        js += 'function(#payload~,#key~,#i~,#j~,#chars~,#block~,#cipherBlock~,#result~,#lastBlockLength~){';
+        js += 'for(' +
+                // Initialise i = 1, result = '', lastBlockLength=payload[0]
+                '#i~=+!!#payload~,#result~=[]+[],#lastBlockLength~=#payload~[0];' +
+                '#i~<#payload~[' + stateTable.getReference('strLength') + '];' +
+                '#i~++){';
+        js += '#cipherBlock~=#block~=#payload~[#i~];';
+        js += '#block~=#block~^#key~;';
+        // Calculate the number of characters in this block
+        js += '#chars~=(#i~-#payload~[' + stateTable.getReference('strLength') + ']==+!#payload~)' +
+                '?#lastBlockLength~' +
+                ':(' + numbers.getSymbolic(bitpack.packWidth) + ');';
+        // Initialise j = 0 and Iterate up to the block length
+        js += 'for(#j~=+!#key~;#j~<#chars~;#j~++){';
+        // Get 1 character from the block
+        js += '#result~+=' + stateTable.getReference('fnFromCharCode') +
+                '((#block~&(' + numbers.getSymbolic(127) + '))+(' + numbers.getSymbolic(bitpack.charMin) + '));';
+        js += '#block~=#block~>>(' + numbers.getSymbolic(7) + ');';
+        js += '}'; // End inner loop
+        js += '#key~=(#cipherBlock~>>(' + numbers.getSymbolic(3) + '))^#key~';
+        js += '}'; // End outer loop
+        js += 'return #result~';
+        js += '}';
+        
+        js = variables.substitute(js);
+        
+        return js;
+    };
+    
+    module.writeEvaluator = function() {
+        var variables = new variableMap();
+            variables.make('payload', 'key');
+        
+        
+        var js = '';
+        
+        js += 'function(#payload~,#key~){';
+        js += stateTable.getReference('global') + '[' + strings.obscureString('eval') + ']';
+        js += '(' + stateTable.getReference('fnUnpack') + '(#payload~,#key~))';
+        js += '}';
+        
+        js = variables.substitute(js);
+        
+        return js;
     };
     
     module.generateRuntime = function(payload) {
@@ -167,16 +158,24 @@ define(['numbers', 'strings', 'underscore'], function(numbers, strings, _) {
         
         stateTable.resetState();
         stateTable.setState('strLength', strings.obscureString('length'));
-        stateTable.setState('strCharCodeAt', strings.obscureString('charCodeAt'));
-        stateTable.setState('fnHashCode', module.writeHashCodeFn());
-        stateTable.setState('fnPluck', module.writePluckFn());
         stateTable.setState('global', module.writeGlobal());
+        stateTable.setState('fnFromCharCode', module.writeFromCharCode());
+        stateTable.setState('fnUnpack', module.writeUnpacker());
+        stateTable.setState('fnEvalute', module.writeEvaluator());
+        
+        var key = bitpack.randomKey();
+        var packed = _.map(bitpack.pack(payload, key), function(n) { return numbers.getSymbolic(n); });
+        packed = '[' + packed.join(',') + ']';
+        
+        
+        stateTable.setState('payload', packed);
+        stateTable.setState('key', numbers.getSymbolic(key));
         
         var js = '';
         
         js += '(function(' + stateTable.variable + '){';
         js += stateTable.writeAll();
-        js += 'return ' + module.writePlucker(stateTable.getReference('global'), 'alert') + '("Hi!");';
+        js += stateTable.getReference('fnEvalute') + '(' + stateTable.getReference('payload') + ',' + stateTable.getReference('key') + ');';
         js += '})({});';
         
         return js;
