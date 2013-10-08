@@ -21,7 +21,7 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
     
     
     var variableMap = function() {
-        var characterSet = ['\u03DF', '\u1D24', '\u0394', '\u02AD', '\u0465', '\u04E3', '\u0549', '\u1D77', '\u0194'];
+        var characterSet = ['\u03DF', '\u1D24', '\u0394', '\u02AD', '\u0465', '\u04E3', '\u0549', '\u1D77', '\u0194', '\u037D'];
         characterSet = _.sortBy(characterSet, function(c) {  return Math.random(); });
         
         var map = {};
@@ -107,13 +107,13 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
     
     module.writeUnpacker = function() {
         var variables = new variableMap();
-            variables.make('payload', 'key', 'i', 'j', 'chars', 'block', 'cipherBlock', 'result', 'lastBlockLength');
+            variables.make('payload', 'key', 'eval', 'i', 'j', 'chars', 'block', 'cipherBlock', 'result', 'lastBlockLength');
         
         
         var js = '';
         
         // The first two arguments are the required parameters
-        js += 'function(#payload~,#key~,#i~,#j~,#chars~,#block~,#cipherBlock~,#result~,#lastBlockLength~){';
+        js += 'function(#payload~,#key~,#eval~,#i~,#j~,#chars~,#block~,#cipherBlock~,#result~,#lastBlockLength~){';
         js += 'for(' +
                 // Initialise i = 1, result = '', lastBlockLength=payload[0]
                 '#i~=+!!#payload~,#result~=[]+[],#lastBlockLength~=#payload~[0];' +
@@ -134,7 +134,7 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         js += '}'; // End inner loop
         js += '#key~=(#cipherBlock~>>(' + numbers.getSymbolic(3) + '))^#key~';
         js += '}'; // End outer loop
-        js += 'return #result~';
+        js += '#eval~(#result~)';
         js += '}';
         
         js = variables.substitute(js);
@@ -149,9 +149,12 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         
         var js = '';
         
-        js += 'function(#payload~,#key~){';
+        js += 'function(){';
+        js += stateTable.getReference('fnUnpack') + '(';
+        js += stateTable.getReference('payload') + ',';
+        js += stateTable.getReference('key') + ',';
         js += stateTable.getReference('global') + '[' + strings.obscureString('eval') + ']';
-        js += '(' + stateTable.getReference('fnUnpack') + '(#payload~,#key~))';
+        js += ')';
         js += '}';
         
         js = variables.substitute(js);
@@ -191,7 +194,7 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         js += realise('fnFromCharCode');
         js += realise('fnFunction');
         js += realise('global');
-        js += stateTable.getReference('fnEvalute') + '(' + stateTable.getReference('payload') + ',' + stateTable.getReference('key') + ')';
+        js += stateTable.getReference('fnEvalute') + '()';
         js += '})({});';
         
         return js;
