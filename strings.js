@@ -9,7 +9,7 @@ define(['numbers'], function(numbers) {
         string = string.replace(/undefined/g, '([][![]]+([]+[]))');
         string = string.replace(/obj/g, '([]+{})');
         string = string.replace(/Infinity/g, '(!!{}/[]+[])');
-        string = string.replace(/NaN/g, '({+{}+{}})');
+        string = string.replace(/NaN/g, '([]*{})');
         string = string.replace(/\d+/g, function(n){ return numbers.getSymbolic(Number(n)); });
         return string;
     };
