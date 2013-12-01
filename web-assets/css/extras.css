@@ -1,0 +1,13 @@
+textarea.form-control {
+    height: 150px;
+    font-family: "Consolas","Monaco","Courier New","Courier",sans-serif;
+    font-size: 11px;
+}
+
+.confound-button-container {
+    padding: 20px;
+    margin: 0 0 20px 0;
+    background-color: #dedede;
+    width: 100%;
+    box-sizing: border-box;
+}

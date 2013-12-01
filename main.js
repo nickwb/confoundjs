@@ -9,6 +9,17 @@ requirejs.config({
 
 require(['runtime'], function(runtime) {
 
-    console.log(runtime.generateRuntime("alert('Hello World!');"));
+    var $jsIn = $('#jsInput'),
+        $jsOut = $('#jsOutput');
+
+    $('#doConfound').on('click', function(e) {
+        e.preventDefault();
+        $jsOut.val( runtime.generateRuntime($jsIn.val()) );
+    });
+    
+    $('#doEval').on('click', function(e) {
+        e.preventDefault();
+        window.eval( $jsOut.val() );
+    });
     
 });
