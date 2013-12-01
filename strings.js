@@ -6,7 +6,7 @@ define(['numbers'], function(numbers) {
     var expand = function(string) {
         string = string.replace(/true/g, '(!!{}+{})');
         string = string.replace(/false/g, '(!{}+{})');
-        string = string.replace(/undefined/g, '([][![]]+([]+[]))');
+        string = string.replace(/undefined/g, '([][![]]+[])');
         string = string.replace(/obj/g, '([]+{})');
         string = string.replace(/Infinity/g, '(!!{}/[]+[])');
         string = string.replace(/NaN/g, '([]*{})');
