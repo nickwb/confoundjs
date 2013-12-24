@@ -55,14 +55,16 @@ define(['numbers'], function(numbers) {
     module.resetTransients = function() {
         map['g'] = null;
         map['h'] = null;
+        map['m'] = null;
+        map['v'] = null;
     };
     
     module.mapToString = function(ref) {
         map['g'] = '(' + ref + ')' + expand('[7]');
     };
     
-    module.mapH = function(ref) {
-        map['h'] = '(' + ref + ')';
+    module.mapSingle = function(c, ref) {
+        map[c] = '(' + ref + ')';
     };
     
     module.obscureString = function(str) {

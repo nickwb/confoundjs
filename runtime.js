@@ -11,6 +11,8 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         stateTable = new stateTable();
         
         stateTable.reserve('strH');
+        stateTable.reserve('strM');
+        stateTable.reserve('strV');
         stateTable.reserve('strLength');
         stateTable.reserve('strConstructor');
         stateTable.reserve('strToString');
@@ -97,14 +99,6 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         
     };
     
-    module.writeUtilities = function() {
-        var js = '';
-        
-        js += 'function(){';
-        
-        js += '};';
-    };
-    
     module.writeUnpacker = function() {
         var variables = new variableMap();
             variables.make('payload', 'key', 'eval', 'i', 'j', 'chars', 'block', 'cipherBlock', 'result', 'lastBlockLength');
@@ -116,7 +110,7 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         js += 'function(#payload,#key,#eval,#i,#j,#chars,#block,#cipherBlock,#result,#lastBlockLength){';
         js += 'for(' +
                 // Initialise i = 1, result = '', lastBlockLength=payload[0]
-                '#i=+!!#payload,#result=[]+[],#lastBlockLength=#payload[0];' +
+                '#i=+!!#payload,#result=[]+[],#lastBlockLength=#payload[+![]];' +
                 '#i<#payload[' + stateTable.getReference('strLength') + '];' +
                 '#i++){';
         js += '#cipherBlock=#block=#payload[#i];';
@@ -134,7 +128,10 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         js += '}'; // End inner loop
         js += '#key=(#cipherBlock>>(' + numbers.getSymbolic(3) + '))^#key';
         js += '}'; // End outer loop
-        js += '#eval(#result)';
+        // Try to "hide" the invocation of eval
+        js += '(#lastBlockLength==#payload[+![]]?#eval:#key)(#result);';
+        // Noop at the end of the function so the final statement isn't an eval
+        js += '#payload=![]';
         js += '}';
         
         js = variables.substitute(js);
@@ -152,9 +149,10 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         js += 'function(){';
         
         // Realise items in the state table
-        // Get the "toString" string
+        // Generate the "toString" string
         js += stateTable.getReference('strToString') + '=';
         js += strings.obscureString('to') + '+('
+        // ((+![])+([]+[])['constructor']).substr(10, 6);
         js += '((+![])+([]+[])[' + stateTable.getReference('strConstructor') + '])[' + strings.obscureString('substr') + ']';
         js += '(' + numbers.getSymbolic(10) + ',' + numbers.getSymbolic(6) + ')'
         js += ');';
@@ -162,17 +160,25 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         // Map "toString" in to the strings map
         strings.mapToString(stateTable.getReference('strToString'));
         
-        // Get the "h" string
-        js += stateTable.getReference('strH') + '=(+(' + numbers.getSymbolic(101) + '))[' + stateTable.getReference('strToString') + '](' + numbers.getSymbolic(21) + ')[' + numbers.getSymbolic(1) + '];';
-        strings.mapH(stateTable.getReference('strH'));
+        // Generate the "h" string
+        js += stateTable.getReference('strH') + '=(' + numbers.getSymbolic(17) + ')[' + stateTable.getReference('strToString') + '](' + numbers.getSymbolic(18) + ');';
+        strings.mapSingle('h', stateTable.getReference('strH'));
         
-        // Get the "length" string
+        // Generate the "m" string
+        js += stateTable.getReference('strM') + '=(' + numbers.getSymbolic(22) + ')[' + stateTable.getReference('strToString') + '](' + numbers.getSymbolic(23) + ');';
+        strings.mapSingle('m', stateTable.getReference('strM'));
+        
+        // Generate the "v" string
+        js += stateTable.getReference('strV') + '=(' + numbers.getSymbolic(31) + ')[' + stateTable.getReference('strToString') + '](' + numbers.getSymbolic(32) + ');';
+        strings.mapSingle('v', stateTable.getReference('strV'));
+        
+        // Generate the "length" string
         js += stateTable.getReference('strLength') + '=' + strings.obscureString('length') + ';';
         
         // Get a reference to the fromCharCode function
         js += stateTable.getReference('fnFromCharCode') + '=' + '([]+[])[' + stateTable.getReference('strConstructor') + '][' + strings.obscureString('fromCharCode')  + '];';
         
-        // Call the unpacker
+        // Invoke the unpacker
         js += stateTable.getReference('fnUnpack') + '(';
         // unpacker arguments
         js += stateTable.getReference('payload') + ',';
@@ -199,6 +205,8 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         
         stateTable.resetState();
         stateTable.setState('strH', null);
+        stateTable.setState('strM', null);
+        stateTable.setState('strV', null);
         stateTable.setState('strLength', null);
         stateTable.setState('strConstructor', strings.obscureString('constructor'));
         stateTable.setState('strToString', null);
