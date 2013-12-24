@@ -18,28 +18,51 @@ define(['numbers'], function(numbers) {
         if(module.initialised) { return };
         module.initialised = true;
         
-        //obj = "[object Object]"
-        
         map['a'] = expand('false[1]');
         map['b'] = expand('obj[2]');
         map['c'] = expand('obj[5]');
         map['d'] = expand('undefined[2]');
         map['e'] = expand('true[3]');
         map['f'] = expand('false[0]');
+        // g - transient
+        // h - transient
         map['i'] = expand('undefined[5]');
         map['j'] = expand('obj[3]');
+        // k
         map['l'] = expand('false[2]');
+        // m
         map['n'] = expand('undefined[1]');
         map['o'] = expand('obj[1]');
+        // p
+        // q
         map['r'] = expand('true[1]');
         map['s'] = expand('false[3]');
         map['t'] = expand('true[0]');
         map['u'] = expand('undefined[0]');
+        // v
+        // w
+        // x
         map['y'] = expand('Infinity[7]');
+        // z
         
         map['I'] = expand('Infinity[0]');
         map['N'] = expand('NaN[0]');
         map['O'] = expand('obj[8]');
+        
+        map[' '] = expand('obj[7]');
+    };
+    
+    module.resetTransients = function() {
+        map['g'] = null;
+        map['h'] = null;
+    };
+    
+    module.mapToString = function(ref) {
+        map['g'] = '(' + ref + ')' + expand('[7]');
+    };
+    
+    module.mapH = function(ref) {
+        map['h'] = '(' + ref + ')';
     };
     
     module.obscureString = function(str) {

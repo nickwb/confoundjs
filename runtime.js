@@ -6,12 +6,14 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         if(module.initialised) { return };
         module.initialised = true;
         
+        strings.resetTransients();
+        
         stateTable = new stateTable();
         
+        stateTable.reserve('strH');
         stateTable.reserve('strLength');
         stateTable.reserve('strConstructor');
-        stateTable.reserve('fnFunction');
-        stateTable.reserve('global');
+        stateTable.reserve('strToString');
         stateTable.reserve('fnFromCharCode');
         stateTable.reserve('fnUnpack');
         stateTable.reserve('payload');
@@ -46,7 +48,7 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         };
         
         this.substitute = function(js) {
-            var pattern = /#([a-zA-Z]+)~/g;
+            var pattern = /#([a-zA-Z]+)~?/g;
             return js.replace(pattern, function(m, name) { return map[name]; });
         };
     };
@@ -84,6 +86,9 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
             var js = '';
             
             for(var i = 0; i < reservations.length; i++) {
+                if(state[i] === null || state[i] === undefined) {
+                    continue;
+                }
                 js += this.variable + '[' + numbers.getSymbolic(i) + ']=' + state[i] + ';';
             }
             
@@ -92,17 +97,12 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         
     };
     
-    
-    module.writeFunction = function() {
-        return 'function(){return [][' + strings.obscureString('join') + '][' + stateTable.getReference('strConstructor') + ']}';
-    };
-    
-    module.writeGlobal = function() {
-        return 'function(){return '+ stateTable.getReference('fnFunction') +'(' + strings.obscureString('return this') + ')()}';
-    };
-    
-    module.writeFromCharCode = function() {
-        return 'function(){return ([]+[])[' + stateTable.getReference('strConstructor') + '][' + strings.obscureString('fromCharCode')  + ']}';
+    module.writeUtilities = function() {
+        var js = '';
+        
+        js += 'function(){';
+        
+        js += '};';
     };
     
     module.writeUnpacker = function() {
@@ -112,29 +112,29 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         
         var js = '';
         
-        // The first two arguments are the required parameters
-        js += 'function(#payload~,#key~,#eval~,#i~,#j~,#chars~,#block~,#cipherBlock~,#result~,#lastBlockLength~){';
+        // The first three arguments are the required parameters
+        js += 'function(#payload,#key,#eval,#i,#j,#chars,#block,#cipherBlock,#result,#lastBlockLength){';
         js += 'for(' +
                 // Initialise i = 1, result = '', lastBlockLength=payload[0]
-                '#i~=+!!#payload~,#result~=[]+[],#lastBlockLength~=#payload~[0];' +
-                '#i~<#payload~[' + stateTable.getReference('strLength') + '];' +
-                '#i~++){';
-        js += '#cipherBlock~=#block~=#payload~[#i~];';
-        js += '#block~=#block~^#key~;';
+                '#i=+!!#payload,#result=[]+[],#lastBlockLength=#payload[0];' +
+                '#i<#payload[' + stateTable.getReference('strLength') + '];' +
+                '#i++){';
+        js += '#cipherBlock=#block=#payload[#i];';
+        js += '#block=#block^#key;';
         // Calculate the number of characters in this block
-        js += '#chars~=(#i~-#payload~[' + stateTable.getReference('strLength') + ']==+!#payload~)' +
-                '?#lastBlockLength~' +
+        js += '#chars=(#i-#payload[' + stateTable.getReference('strLength') + ']==+!#payload)' +
+                '?#lastBlockLength' +
                 ':(' + numbers.getSymbolic(bitpack.packWidth) + ');';
         // Initialise j = 0 and Iterate up to the block length
-        js += 'for(#j~=+!#key~;#j~<#chars~;#j~++){';
+        js += 'for(#j=+!#key;#j<#chars;#j++){';
         // Get 1 character from the block
-        js += '#result~+=' + stateTable.getReference('fnFromCharCode') +
-                '((#block~&(' + numbers.getSymbolic(127) + '))+(' + numbers.getSymbolic(bitpack.charMin) + '));';
-        js += '#block~=#block~>>(' + numbers.getSymbolic(7) + ');';
+        js += '#result+=' + stateTable.getReference('fnFromCharCode') +
+                '((#block&(' + numbers.getSymbolic(127) + '))+(' + numbers.getSymbolic(bitpack.charMin) + '));';
+        js += '#block=#block>>(' + numbers.getSymbolic(7) + ');';
         js += '}'; // End inner loop
-        js += '#key~=(#cipherBlock~>>(' + numbers.getSymbolic(3) + '))^#key~';
+        js += '#key=(#cipherBlock>>(' + numbers.getSymbolic(3) + '))^#key';
         js += '}'; // End outer loop
-        js += '#eval~(#result~)';
+        js += '#eval(#result)';
         js += '}';
         
         js = variables.substitute(js);
@@ -150,10 +150,42 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         var js = '';
         
         js += 'function(){';
+        
+        // Realise items in the state table
+        // Get the "toString" string
+        js += stateTable.getReference('strToString') + '=';
+        js += strings.obscureString('to') + '+('
+        js += '((+![])+([]+[])[' + stateTable.getReference('strConstructor') + '])[' + strings.obscureString('substr') + ']';
+        js += '(' + numbers.getSymbolic(10) + ',' + numbers.getSymbolic(6) + ')'
+        js += ');';
+        
+        // Map "toString" in to the strings map
+        strings.mapToString(stateTable.getReference('strToString'));
+        
+        // Get the "h" string
+        js += stateTable.getReference('strH') + '=(+(' + numbers.getSymbolic(101) + '))[' + stateTable.getReference('strToString') + '](' + numbers.getSymbolic(21) + ')[' + numbers.getSymbolic(1) + '];';
+        strings.mapH(stateTable.getReference('strH'));
+        
+        // Get the "length" string
+        js += stateTable.getReference('strLength') + '=' + strings.obscureString('length') + ';';
+        
+        // Get a reference to the fromCharCode function
+        js += stateTable.getReference('fnFromCharCode') + '=' + '([]+[])[' + stateTable.getReference('strConstructor') + '][' + strings.obscureString('fromCharCode')  + '];';
+        
+        // Call the unpacker
         js += stateTable.getReference('fnUnpack') + '(';
+        // unpacker arguments
         js += stateTable.getReference('payload') + ',';
         js += stateTable.getReference('key') + ',';
-        js += stateTable.getReference('global') + '[' + strings.obscureString('eval') + ']';
+        // Third argument is the eval function
+        js += '(';
+        // Get the function constructor from array.join.constructor
+        js += '([][' + strings.obscureString('join') + '][' + stateTable.getReference('strConstructor') + '])';
+        // Call the function constructor to create the function 'return this', and evaluate it immediately
+        js += '(' + strings.obscureString('return this') + ')' + '())'
+        // Extract the eval function from the global object
+        js += '[' + strings.obscureString('eval') + ']';
+        // End argyments to the unpacker
         js += ')';
         js += '}';
         
@@ -166,11 +198,11 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         initialise();
         
         stateTable.resetState();
-        stateTable.setState('strLength', strings.obscureString('length'));
+        stateTable.setState('strH', null);
+        stateTable.setState('strLength', null);
         stateTable.setState('strConstructor', strings.obscureString('constructor'));
-        stateTable.setState('fnFunction', module.writeFunction());
-        stateTable.setState('global', module.writeGlobal());
-        stateTable.setState('fnFromCharCode', module.writeFromCharCode());
+        stateTable.setState('strToString', null);
+        stateTable.setState('fnFromCharCode', null);
         stateTable.setState('fnUnpack', module.writeUnpacker());
         stateTable.setState('fnEvalute', module.writeEvaluator());
         
@@ -178,22 +210,13 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         var packed = _.map(bitpack.pack(payload, key), function(n) { return numbers.getSymbolic(n); });
         packed = '[' + packed.join(',') + ']';
         
-        
         stateTable.setState('payload', packed);
         stateTable.setState('key', numbers.getSymbolic(key));
-        
-        var realise = function(reference) {
-            reference = stateTable.getReference(reference);
-            return reference + '=' + reference + '();'
-        };
         
         var js = '';
         
         js += '(function(' + stateTable.variable + '){';
         js += stateTable.writeAll();
-        js += realise('fnFromCharCode');
-        js += realise('fnFunction');
-        js += realise('global');
         js += stateTable.getReference('fnEvalute') + '()';
         js += '})({});';
         
