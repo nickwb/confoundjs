@@ -191,7 +191,7 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         js += '(' + strings.obscureString('return this') + ')' + '())'
         // Extract the eval function from the global object
         js += '[' + strings.obscureString('eval') + ']';
-        // End argyments to the unpacker
+        // End arguments to the unpacker
         js += ')';
         js += '}';
         

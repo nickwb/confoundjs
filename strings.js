@@ -30,7 +30,7 @@ define(['numbers'], function(numbers) {
         map['j'] = expand('obj[3]');
         // k
         map['l'] = expand('false[2]');
-        // m
+        // m - transient
         map['n'] = expand('undefined[1]');
         map['o'] = expand('obj[1]');
         // p
@@ -39,7 +39,7 @@ define(['numbers'], function(numbers) {
         map['s'] = expand('false[3]');
         map['t'] = expand('true[0]');
         map['u'] = expand('undefined[0]');
-        // v
+        // v - transient
         // w
         // x
         map['y'] = expand('Infinity[7]');
