@@ -12,7 +12,6 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         
         stateTable.reserve('strH');
         stateTable.reserve('strM');
-        stateTable.reserve('strV');
         stateTable.reserve('strLength');
         stateTable.reserve('strConstructor');
         stateTable.reserve('strToString');
@@ -99,15 +98,20 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         
     };
     
+    module.writeFunctionConstructor = function() {
+        // array.join.constructor
+        return '([][' + strings.obscureString('join') + '][' + stateTable.getReference('strConstructor') + '])';
+    };
+    
     module.writeUnpacker = function() {
         var variables = new variableMap();
-            variables.make('payload', 'key', 'eval', 'i', 'j', 'chars', 'block', 'cipherBlock', 'result', 'lastBlockLength');
+            variables.make('payload', 'key', 'i', 'j', 'chars', 'block', 'cipherBlock', 'result', 'lastBlockLength');
         
         
         var js = '';
         
         // The first three arguments are the required parameters
-        js += 'function(#payload,#key,#eval,#i,#j,#chars,#block,#cipherBlock,#result,#lastBlockLength){';
+        js += 'function(#payload,#key,#i,#j,#chars,#block,#cipherBlock,#result,#lastBlockLength){';
         js += 'for(' +
                 // Initialise i = 1, result = '', lastBlockLength=payload[0]
                 '#i=+!!#payload,#result=[]+[],#lastBlockLength=#payload[+![]];' +
@@ -128,8 +132,14 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         js += '}'; // End inner loop
         js += '#key=(#cipherBlock>>(' + numbers.getSymbolic(3) + '))^#key';
         js += '}'; // End outer loop
-        // Try to "hide" the invocation of eval
-        js += '(#lastBlockLength==#payload[+![]]?#eval:#key)(#result);';
+        
+        // Get the function constructor from array.join.constructor
+        js += module.writeFunctionConstructor();
+        // Call the function constructor
+        // Try to "hide" the passing of the result to the eval
+        js += '(#lastBlockLength==#payload[+![]]?#result:#key)'
+        // Call the resulting function immediately
+        js += '();';
         // Noop at the end of the function so the final statement isn't an eval
         js += '#payload=![]';
         js += '}';
@@ -168,10 +178,6 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         js += stateTable.getReference('strM') + '=(' + numbers.getSymbolic(22) + ')[' + stateTable.getReference('strToString') + '](' + numbers.getSymbolic(23) + ');';
         strings.mapSingle('m', stateTable.getReference('strM'));
         
-        // Generate the "v" string
-        js += stateTable.getReference('strV') + '=(' + numbers.getSymbolic(31) + ')[' + stateTable.getReference('strToString') + '](' + numbers.getSymbolic(32) + ');';
-        strings.mapSingle('v', stateTable.getReference('strV'));
-        
         // Generate the "length" string
         js += stateTable.getReference('strLength') + '=' + strings.obscureString('length') + ';';
         
@@ -179,20 +185,10 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         js += stateTable.getReference('fnFromCharCode') + '=' + '([]+[])[' + stateTable.getReference('strConstructor') + '][' + strings.obscureString('fromCharCode')  + '];';
         
         // Invoke the unpacker
-        js += stateTable.getReference('fnUnpack') + '(';
+        js += stateTable.getReference('fnUnpack');
         // unpacker arguments
-        js += stateTable.getReference('payload') + ',';
-        js += stateTable.getReference('key') + ',';
-        // Third argument is the eval function
-        js += '(';
-        // Get the function constructor from array.join.constructor
-        js += '([][' + strings.obscureString('join') + '][' + stateTable.getReference('strConstructor') + '])';
-        // Call the function constructor to create the function 'return this', and evaluate it immediately
-        js += '(' + strings.obscureString('return this') + ')' + '())'
-        // Extract the eval function from the global object
-        js += '[' + strings.obscureString('eval') + ']';
-        // End arguments to the unpacker
-        js += ')';
+        js += '(' + stateTable.getReference('payload') + ',';
+        js += stateTable.getReference('key') + ')';
         js += '}';
         
         js = variables.substitute(js);
@@ -206,7 +202,6 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         stateTable.resetState();
         stateTable.setState('strH', null);
         stateTable.setState('strM', null);
-        stateTable.setState('strV', null);
         stateTable.setState('strLength', null);
         stateTable.setState('strConstructor', strings.obscureString('constructor'));
         stateTable.setState('strToString', null);

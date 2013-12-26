@@ -426,7 +426,7 @@ define(['underscore'], function(_) {
             throw 'Symbolic representation did not match expected value.';
         }
         
-        console.log(val + ': ' + result.strategy + ' (' + result.leafiness + ' deep)');
+        // console.log(val + ': ' + result.strategy + ' (' + result.leafiness + ' deep)');
         
         return symbolic;
     };

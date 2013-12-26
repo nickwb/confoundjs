@@ -39,7 +39,7 @@ define(['numbers'], function(numbers) {
         map['s'] = expand('false[3]');
         map['t'] = expand('true[0]');
         map['u'] = expand('undefined[0]');
-        // v - transient
+        // v
         // w
         // x
         map['y'] = expand('Infinity[7]');
@@ -56,7 +56,6 @@ define(['numbers'], function(numbers) {
         map['g'] = null;
         map['h'] = null;
         map['m'] = null;
-        map['v'] = null;
     };
     
     module.mapToString = function(ref) {
