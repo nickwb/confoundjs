@@ -32,17 +32,19 @@
         <p class="lead">An experiment in JavaScript obfuscation.</p>
         <form role="form">
             <div class="form-group">
-                <label for="jsInput">Input JavaScript Source</label>
+                <label for="jsInput">Input JavaScript Source:</label>
                 <textarea class="form-control" id="jsInput">alert('Hello World');</textarea>
             </div>
-            <div class="confound-button-container">
+            <div class="confound-button-container" id="counfoundBtnContainer">
                 <button class="btn btn-primary btn-lg" id="doConfound">Confound!</button>
             </div>
+            <div class="alert alert-info" id="progressInfo" style="display:none"><strong>Thinking Hard!</strong> This may take several minutes.</div>
             <div class="form-group">
                 <label for="jsOutput">Confounding JavaScript:</label>
                 <textarea class="form-control" id="jsOutput"></textarea>
+                <div class="alert alert-success" id="countInfo" style="display:none"><strong>n</strong> characters (from <span>n</span> character payload).</div>
             </div>
-            <div class="confound-button-container">
+            <div class="confound-button-container" id="evaluateBtnContainer">
                 <button class="btn btn-primary btn-lg" id="doEval">Evaluate Result</button>
             </div>
         </form>

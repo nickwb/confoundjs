@@ -11,3 +11,7 @@ textarea.form-control {
     width: 100%;
     box-sizing: border-box;
 }
+
+#countInfo {
+    margin-top: 10px;
+}

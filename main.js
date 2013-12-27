@@ -6,7 +6,22 @@ $(function() {
 
     $('#doConfound').on('click', function(e) {
         e.preventDefault();
-        $jsOut.val( ConfoundJS.runtime.generateRuntime($jsIn.val()) );
+        
+        $('#counfoundBtnContainer').slideUp();
+        $('#progressInfo').slideDown(doGenerate);
+        
+        function doGenerate () {
+            $jsOut.val( ConfoundJS.runtime.generateRuntime($jsIn.val()) );
+            _.defer(function() {
+                $('#counfoundBtnContainer').slideDown();
+                $('#progressInfo').slideUp();
+                
+                $('#countInfo strong').text($jsOut.val().length);
+                $('#countInfo span').text($jsIn.val().length);
+                $('#countInfo').show();
+            });
+        }
+        
     });
     
     $('#doEval').on('click', function(e) {

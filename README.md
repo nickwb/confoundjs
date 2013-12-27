@@ -49,7 +49,7 @@ An experiment in JavaScript obfuscation.
 
 + **Encoding Overhead**
   + *jsfuck* requires around **800** characters to encode an empty payload. Additionally, each character in the payload requires around **1700** characters to encode, though this varies dramatically depending on the specific characters in your payload.
-  + *confoundjs* requires around **1900** characters to encode an empty payload. Additionally, each character in the payload requires around **36** characters to encode.
+  + *confoundjs* requires around **1900** characters to encode an empty payload. Additionally, each character in the payload requires around **40** characters to encode.
   
 + **Basic Construction**
   + *jsfuck* represents and evaluates the payload in one (very long) expression. The payload is constructed by string concatenation, character-by-character, with each character encoded individually using a *jsfuck* determined sub-expression.
