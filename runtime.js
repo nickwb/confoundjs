@@ -127,7 +127,7 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         js += 'for(#j=+!#key;#j<#chars;#j++){';
         // Get 1 character from the block
         js += '#result+=' + stateTable.getReference('fnFromCharCode') +
-                '((#block&(' + numbers.getSymbolic(127) + '))+(' + numbers.getSymbolic(bitpack.charMin) + '));';
+                '(#block&(' + numbers.getSymbolic(127) + '));';
         js += '#block=#block>>(' + numbers.getSymbolic(7) + ');';
         js += '}'; // End inner loop
         js += '#key=(#cipherBlock>>(' + numbers.getSymbolic(3) + '))^#key';
@@ -162,7 +162,7 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
         // Generate the "toString" string
         js += stateTable.getReference('strToString') + '=';
         js += strings.obscureString('to') + '+('
-        // ((+![])+([]+[])['constructor']).substr(10, 6);
+        // ((+![])+([]+[])['constructor']).substr(10, 6); == "String"
         js += '((+![])+([]+[])[' + stateTable.getReference('strConstructor') + '])[' + strings.obscureString('substr') + ']';
         js += '(' + numbers.getSymbolic(10) + ',' + numbers.getSymbolic(6) + ')'
         js += ');';

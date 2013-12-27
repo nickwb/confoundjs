@@ -6,11 +6,11 @@ define(['underscore'], function(_) {
     // The choice of this value is determined by the efficiency of the numbers engine.
     // Larger PACK_WIDTHs require larger numbers to be represented by the numbers engine.
     var PACK_WIDTH = 3,
-        CHAR_MIN = 32,
+        CHAR_MIN = 9,
         CHAR_MAX = 126;
     
     var packer = function(substr) {
-        var code = function(i) { return substr.charCodeAt(i) - CHAR_MIN; };
+        var code = function(i) { return substr.charCodeAt(i); };
         var num = 0;
         if(substr.length >= 1) { num += code(0); }
         if(substr.length >= 2) { num += code(1) << 7; }
@@ -23,7 +23,7 @@ define(['underscore'], function(_) {
         chars = chars || PACK_WIDTH;
         var str = '';
         for(var i = 0; i < chars; i++) {
-            str += String.fromCharCode((num & 127) + CHAR_MIN);
+            str += String.fromCharCode(num & 127);
             num = num >> 7;
         }
         
@@ -74,7 +74,6 @@ define(['underscore'], function(_) {
     };
     
     module.packWidth = PACK_WIDTH;
-    module.charMin = CHAR_MIN;
     
     module.test = function() {
         var input = 'This is a test string';
