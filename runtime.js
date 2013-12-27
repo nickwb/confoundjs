@@ -1,5 +1,8 @@
-define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, strings, bitpack, _) {
-
+var ConfoundJS = ConfoundJS || {};
+ConfoundJS.runtime = (function() {
+    
+    var numbers = ConfoundJS.numbers, strings = ConfoundJS.strings, bitpack = ConfoundJS.bitpack;
+    
     var module = {};
     
     var initialise = function() {
@@ -228,4 +231,4 @@ define(['numbers', 'strings', 'bitpack', 'underscore'], function(numbers, string
     
     return module;
 
-});
+})();

@@ -1,4 +1,5 @@
-define(['underscore'], function(_) {
+var ConfoundJS = ConfoundJS || {};
+ConfoundJS.numbers = (function() {
 
     var BASE_MAP_SIZE = 200;
     
@@ -470,4 +471,4 @@ define(['underscore'], function(_) {
     };   
     
     return module;
-});
+})();

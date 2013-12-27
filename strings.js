@@ -1,5 +1,8 @@
-define(['numbers'], function(numbers) {
-
+var ConfoundJS = ConfoundJS || {};
+ConfoundJS.strings = (function() {
+    
+    var numbers = ConfoundJS.numbers;
+    
     var module = {},
         map = {};
         
@@ -94,4 +97,4 @@ define(['numbers'], function(numbers) {
     
     return module;
 
-});
+})();

@@ -1,4 +1,5 @@
-define(['underscore'], function(_) {
+var ConfoundJS = ConfoundJS || {};
+ConfoundJS.bitpack = (function() {
 
     var module = {};
     
@@ -86,4 +87,4 @@ define(['underscore'], function(_) {
     
     return module;
     
-});
+})();

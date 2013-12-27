@@ -49,9 +49,20 @@
       </div>
     </div>
 
+    <!-- Boring Bootstrap/jQuery -->
     <script src="web-assets/js/jquery-2.0.3.min.js"></script>
     <script src="web-assets/js/bootstrap.min.js"></script>
     
-    <script data-main="main.js" src="lib/require.js"></script>
+    <!-- underscore: CounfoundJS dependency -->
+    <script src="lib/underscore.js"></script>
+    
+    <!-- ConfoundJS modules -->
+    <script src="numbers.js"></script>
+    <script src="bitpack.js"></script>
+    <script src="strings.js"></script> <!-- depends on numbers -->
+    <script src="runtime.js"></script> <!-- depends on strings, bitpack, numbers -->
+    
+    <!-- This example/test app -->
+    <script src="main.js"></script> <!-- depends on runtime -->
   </body>
 </html>
