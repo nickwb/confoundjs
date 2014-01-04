@@ -1,9 +1,14 @@
 var ConfoundJS = ConfoundJS || {};
 ConfoundJS.numbers = (function() {
 
-    var BASE_MAP_SIZE = 200;
+    var BASE_MAP_SIZE = 100;
+    var ADD_SUBTRACT_WINDOW = 100;
+    var DIVIDE_WINDOW = 20;
+    var STRONG_ADD_SUBTRACT_CANDIDATE_THRESHOLD = 20;
+    var MAX_SAFE_INT = Math.pow(2, 31) - 1;
     
     var module = {};
+    module.deepSearch = true;
 
     var exp = {},
         map = {};
@@ -96,7 +101,7 @@ ConfoundJS.numbers = (function() {
         };
     });
 
-    // A binary expression which supports addition, subtraction, multiplication and division.
+    // A binary expression which supports addition, subtraction, multiplication, division and left/right shifts.
     // Most of the power of the efficiency of the number system is derived from these binary expressions.
     exp.binary = klass(exp.base, function(left, op, right) {
         
@@ -196,6 +201,10 @@ ConfoundJS.numbers = (function() {
     // It is also an efficient representation in many cases, although it's complexity does scale linearly with
     // the number of decimal digits in the number.
     exp.concat = klass(exp.base, function(val) {
+    
+        if(val < 10) {
+            throw 'Concat expressions require at least two digits.';
+        }
         
         this.build = function(params) {
         
@@ -219,7 +228,11 @@ ConfoundJS.numbers = (function() {
             }
             
             symbolic = '(' + symbolic + ')';
-            if(params.coerce) {
+            
+            var coerce = params.coerce ||
+                         (params.isBinaryOperand && params.isLeftOperand && params.parentOperator === ADD);
+                         
+            if(coerce) {
                 symbolic = '+' + symbolic;
             }
             
@@ -229,7 +242,7 @@ ConfoundJS.numbers = (function() {
             result.strategy = 'concat_' + val;
             result.leafiness = 1 + maxLeafiness;
             result.isAtomic = result.hasParenthesis;
-            result.isAssociative = params.isCoerced === false && params.parentOperator !== ADD;
+            result.isAssociative = coerce === false && params.parentOperator !== ADD;
             result.operatorPrecedence = 0;
             result.hasParenthesis = params.isLeftOperand;
             
@@ -251,62 +264,80 @@ ConfoundJS.numbers = (function() {
     exp.map = function(val) {
         return map[val] || exp.lazy(val);
     };
+    
+    var isInteger = function(v) {
+        return v === +v && v === (v|0); 
+    };
 
     exp.chooseBest = function(value, options) {
     
         var defaults = {
-            maxPasses: 5,
-            skipLarger: false,
-            missingFilter: function(v) { return v <= 10000; }
+            skipLarger: false
         };
         
-        options = _.extend({}, defaults, options);
-    
-        var missingMapping = [];
-    
-        var pass = function(val) {
+        options = _.extend({}, defaults, options);        
         
-            var winner = null, smallest = Number.POSITIVE_INFINITY, count = 0;
-            var trySolution = function(expr) {
-                var built = expr.build(exp.buildParams({ coerce: true })),
-                    len = built.symbolic.length;
-                    
-                if(len < smallest) {
-                    smallest = len;
-                    winner = { name: built.strategy, expr: expr };
-                }
+        if(value < 11) { throw "Values 0-10 are always hard-coded."; }
+    
+        var winner, smallest, count;
+        var trySolution = function(expr) {
+            var built = expr.build(exp.buildParams({ coerce: true })),
+                len = built.symbolic.length;
                 
-                count++;
-            };
-            
-            trySolution(exp.concat(val));
-            
-            var isCandidate = function(n) {
-                n = +n;
-                if(n < 0 || Math.floor(n) !== Math.ceil(n)) {
-                    return false;
-                }
-                
-                return true;
-            };
-            
-            var expand = function(val) {
-                var existing = map[val];
-                if(existing) {
-                    return existing;
-                }
-                
-                missingMapping.push(val);
-                return exp.concat(val);
+            if(len < smallest) {
+                smallest = len;
+                winner = { name: built.strategy, expr: expr };
             }
             
-            var i, a, b;
+            count++;
+        };
+        
+        var isCandidate = function(n) {
+            n = +n;
+            if(n < 0 || !isInteger(n)) {
+                return false;
+            }
             
-            var max = Math.min(Math.ceil(val / 2), BASE_MAP_SIZE);
-            for(i = 1; i <= max; i++) {
-                a = i;  
-                // val = a + b
-                b = val - a;
+            return true;
+        };
+        
+        var missingMapping = [null],
+            isStrongExpansionCandidate = false,
+            searchDepth = 1;
+        
+        var expand = function(val) {
+            val = +val;
+            if(val < 0) { throw "Invalid Expansion."; }
+        
+            var existing = map[val];
+            if(existing) {
+                return existing;
+            }
+            
+            if(isStrongExpansionCandidate) {
+                missingMapping.push(val);
+            }
+            
+            return exp.concat(val);
+        }
+        
+        var originalQuery = value;
+        
+        var i, a, b;
+        
+        while(true) {
+            // Reset the best candidates
+            winner = null, smallest = Number.POSITIVE_INFINITY, count = 0;
+            
+            trySolution(exp.concat(value));            
+            
+            var max = Math.min(Math.ceil(value / 2), ADD_SUBTRACT_WINDOW);
+            for(i = 1; i <= max; i++) {                
+                a = i;
+                isStrongExpansionCandidate = (searchDepth === 1 && (a < STRONG_ADD_SUBTRACT_CANDIDATE_THRESHOLD));
+                
+                // value = a + b
+                b = value - a;
                 if(isCandidate(b)) {
                     // Sometimes the coercion is more efficient by swapping the operands
                     trySolution(exp.binary(expand(a), ADD, expand(b))); 
@@ -314,49 +345,62 @@ ConfoundJS.numbers = (function() {
                 }
             }
             
-            max = Math.ceil(Math.sqrt(val));
+            max = Math.ceil(Math.sqrt(value));
             for(i = 1; i <= max; i++) {
                 a = i;
-                // val = a * b
-                b = val / a;
+                // value = a * b
+                b = value / a;
                 if(isCandidate(b)) {
+                    // Multiplications and shifts are our most efficient representations,
+                    // so complete expansion is encouraged
+                    isStrongExpansionCandidate = (searchDepth <= 2);
+                    
                     trySolution(exp.binary(expand(a), MULTIPLY, expand(b)));
                     
-                    // val = a << b
+                    // value = a << b
                     b = Math.log(b)/Math.log(2);
                     if(isCandidate(b)) {
                         trySolution(exp.binary(expand(a), LSHIFT, expand(b)));
                     }
                     
                     // Multiplications are commutative but shifts are not
-                    // val = b << a
-                    b = val / a;
+                    // value = b << a
+                    b = value / a;
                     a = Math.log(a)/Math.log(2);
                     if(isCandidate(a)) {
                        trySolution(exp.binary(expand(b), LSHIFT, expand(a)));
                     }
+                    
+                    isStrongExpansionCandidate = false;
                 }
             }
             
-            if(!options.skipLarger) {
-                max = val + BASE_MAP_SIZE;
-                for(i = val + 1; i <= max; i++) {
+            if(!options.skipLarger) {            
+                max = value + ADD_SUBTRACT_WINDOW;
+                for(i = value + 1; i <= max; i++) {
                     a = i;
-                    // val = a - b
-                    b = -(val - a);
+                    
+                    // value = a - b
+                    b = -(value - a);
+                    isStrongExpansionCandidate = searchDepth === 1 && (b < STRONG_ADD_SUBTRACT_CANDIDATE_THRESHOLD);
+                    
                     if(isCandidate(b)) {
                         trySolution(exp.binary(expand(a), SUBTRACT, expand(b))); 
                     }
                 }
                 
-                max = BASE_MAP_SIZE;
-                for(i = 2; i <= max; i++) {
+                max = DIVIDE_WINDOW;
+                for(i = 2; i <= max; i++) {                    
                     b = i;        
-                    // val = a / b
-                    a = val * b;
+                    // value = a / b
+                    a = value * b;
+                    
+                    // Rounding errors
+                    if(a > MAX_SAFE_INT) { break; }
+                    
                     trySolution(exp.binary(expand(a), DIVIDE, expand(b))); 
                     
-                    // val = a >> b
+                    // value = a >> b
                     b = Math.log(b)/Math.log(2);
                     if(isCandidate(b)) {
                         trySolution(exp.binary(expand(a), RSHIFT, expand(b)));
@@ -364,25 +408,47 @@ ConfoundJS.numbers = (function() {
                 }
             }
             
-            return winner.expr;
-        };
-        
-        for(var i = 0; i < options.maxPasses; i++) {
-            map[value] = pass(value);
-            missingMapping = _.uniq(_.filter(missingMapping, options.missingFilter));
+            map[value] = winner.expr;
             
+            // Don't attempt deep searches?
+            if(module.deepSearch === false) {
+                break;
+            }
+            
+            // Nothing left?
             if(missingMapping.length === 0) {
                 break;
             }
             
-            var temp;
-            missingMapping = [];
-            _.each(temp, function(v) {
-                map[v] = pass(v);
-            });
+            value = missingMapping.shift();
+            
+            if(value === null) {
+                searchDepth++;
+                
+                // We're at the end of the mappings at this depth level.
+                // If searchDepth is greater than two then we have evaluated at least
+                // one additional candidate for the original query.
+                // In this case, we should re-evaluate the original query to see if it
+                // can now be represented more efficiently.
+                if(missingMapping.length === 0) {
+                    if(searchDepth > 2) {
+                        // NB: while loop will break after the next iteration as missingMapping.length === 0
+                        value = originalQuery;
+                        continue;
+                    } else {
+                        break;
+                    }
+                } else {
+                    // Organise the next depth level
+                    missingMapping = _.uniq(missingMapping);
+                    missingMapping.push(null);
+                }
+                
+                // We pulled a null off the list so pull again
+                value = missingMapping.shift();
+            }
         }
         
-        return { missing: missingMapping };
     };
 
     var isInitialised = false;
@@ -390,6 +456,8 @@ ConfoundJS.numbers = (function() {
     var initialiseMap = function() {
         if(isInitialised) { return };
         isInitialised = true;
+        
+        console.log('Numbers: initialising base map.');
         
         map[0] = exp.unit(0);
         map[1] = exp.unit(1);
@@ -406,17 +474,28 @@ ConfoundJS.numbers = (function() {
         // Start by filling out the base map in a strictly incrementing fashion,
         // ignoring any candidates involving larger numbers.
         for(var i = 11; i <= BASE_MAP_SIZE; i++) {
-            exp.chooseBest(i, { maxPasses: 1, skipLarger: true });
+            exp.chooseBest(i, { skipLarger: true });
         }
         
         // Perform a second pass, this time considering larger candidates
         for(var i = 11; i <= BASE_MAP_SIZE; i++) {
-            exp.chooseBest(i, { maxPasses: 1 });
+            exp.chooseBest(i);
         }
-
+        
+        console.log('Numbers: initialisation complete.');
     };
     
     module.getSymbolic = function(val) {
+        if(!isInteger(val) && Math.abs(val) < MAX_SAFE_INT) {
+            throw 'Only integers less than ' + MAX_SAFE_INT + ' are supported.';
+        }
+        
+        var shouldNegate = false;
+        if(val < 0) {
+            shouldNegate = true;
+            val = val * -1;
+        }
+    
         initialiseMap();
     
         var result = exp.map(val).build(exp.buildParams({ coerce: true })),
@@ -427,7 +506,9 @@ ConfoundJS.numbers = (function() {
             throw 'Symbolic representation did not match expected value.';
         }
         
-        // console.log(val + ': ' + result.strategy + ' (' + result.leafiness + ' deep)');
+        if(shouldNegate) {
+            symbolic = '-(' + symbolic + ')';
+        }
         
         return symbolic;
     };
@@ -468,7 +549,66 @@ ConfoundJS.numbers = (function() {
         
         var testTime = new Date().getTime() - testStart.getTime();
         console.log('Test Time: ' + testTime + 'ms');
-    };   
+    };
+    
+    module.expandBaseMap = function(done) {
+    
+        if(BASE_MAP_SIZE >= 1000) { return false; }
+        
+        var EXPANSION_RATE = 50;
+        var WORK_RATE = 10;
+        var WORK_INTERVAL = 150;
+        
+        initialiseMap();
+    
+        var target = BASE_MAP_SIZE + EXPANSION_RATE,
+            i;
+            
+        console.log('Numbers: opportunistically expanding base map to: ' + target);
+            
+        function firstPass() {
+        
+            i = BASE_MAP_SIZE + 1;
+            
+            var doBlockOfWork = function() {
+                var z = Math.min(i + WORK_RATE, target);
+                for(; i <= z; i++) {
+                    exp.chooseBest(i, { skipLarger: true });
+                }
+                
+                if(i >= target) {
+                    setTimeout(secondPass, WORK_INTERVAL);
+                    return;
+                }
+                
+                setTimeout(doBlockOfWork, WORK_INTERVAL);
+            };
+            
+            setTimeout(doBlockOfWork, WORK_INTERVAL);
+        }
+        
+        function secondPass() {
+            i = 11;
+            var doBlockOfWork = function() {
+                var z = Math.min(i + WORK_RATE, target);
+                for(; i <= z; i++) {
+                    exp.chooseBest(i);
+                }
+                
+                if(i >= target) {
+                    BASE_MAP_SIZE = target;
+                    done();
+                    return;
+                }
+                
+                setTimeout(doBlockOfWork, WORK_INTERVAL);
+            };
+            
+            setTimeout(doBlockOfWork, WORK_INTERVAL);
+        }
+        
+        firstPass();
+    };
     
     return module;
 })();

@@ -15,3 +15,12 @@ textarea.form-control {
 #countInfo {
     margin-top: 10px;
 }
+
+.num-optimise {
+    font-weight: normal;
+    margin-top: 10px;
+}
+
+.num-optimise input {
+    margin-right: 5px;
+}

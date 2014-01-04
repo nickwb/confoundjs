@@ -199,34 +199,68 @@ ConfoundJS.runtime = (function() {
         return js;
     };
     
-    module.generateRuntime = function(payload) {
-        initialise();
+    module.generateRuntime = function(payload, onProgress, onResult) {
         
-        stateTable.resetState();
-        stateTable.setState('strH', null);
-        stateTable.setState('strM', null);
-        stateTable.setState('strLength', null);
-        stateTable.setState('strConstructor', strings.obscureString('constructor'));
-        stateTable.setState('strToString', null);
-        stateTable.setState('fnFromCharCode', null);
-        stateTable.setState('fnUnpack', module.writeUnpacker());
-        stateTable.setState('fnEvalute', module.writeEvaluator());
+        onProgress = _.isFunction(onProgress) ? onProgress : function () {};
         
-        var key = bitpack.randomKey();
-        var packed = _.map(bitpack.pack(payload, key), function(n) { return numbers.getSymbolic(n); });
-        packed = '[' + packed.join(',') + ']';
+        var WORK_INTERVAL = 20;
+        var key, packed, encoded, js, i;
         
-        stateTable.setState('payload', packed);
-        stateTable.setState('key', numbers.getSymbolic(key));
+        function beforeEncode() {
+            onProgress(0);
+            initialise();
+            
+            stateTable.resetState();
+            stateTable.setState('strH', null);
+            stateTable.setState('strM', null);
+            stateTable.setState('strLength', null);
+            stateTable.setState('strConstructor', strings.obscureString('constructor'));
+            stateTable.setState('strToString', null);
+            stateTable.setState('fnFromCharCode', null);
+            stateTable.setState('fnUnpack', module.writeUnpacker());
+            stateTable.setState('fnEvalute', module.writeEvaluator());
+            
+            key = bitpack.randomKey();
+            
+            packed = bitpack.pack(payload, key);
+            encoded = [];
+            totalProgress = packed.length + 2;
+            i = 0;
+            
+            setTimeout(encodeBlock, WORK_INTERVAL);
+        }
         
-        var js = '';
+        function encodeBlock() {
+            encoded.push(numbers.getSymbolic(packed[i]));
+            i++;
+            
+            onProgress( i / totalProgress );
+            
+            if(i === packed.length) {
+                setTimeout(afterEncode, WORK_INTERVAL);
+                return;
+            }
+            
+            setTimeout(encodeBlock, WORK_INTERVAL);
+        }
         
-        js += '(function(' + stateTable.variable + '){';
-        js += stateTable.writeAll();
-        js += stateTable.getReference('fnEvalute') + '()';
-        js += '})({});';
+        function afterEncode() {
+            encoded = '[' + encoded.join(',') + ']';
+            
+            stateTable.setState('payload', encoded);
+            stateTable.setState('key', numbers.getSymbolic(key));
+            
+            js = '';
+            
+            js += '(function(' + stateTable.variable + '){';
+            js += stateTable.writeAll();
+            js += stateTable.getReference('fnEvalute') + '()';
+            js += '})({});';
+            
+            onResult(js);
+        }
         
-        return js;
+        beforeEncode();
     };
     
     return module;
