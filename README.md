@@ -44,10 +44,10 @@ An experiment in JavaScript obfuscation.
 
 ### A note of caution
 
-*confoundjs* is a toy! If you're considering using it in a real, production system then you should probably re-evaluate.
+**confoundjs is a toy.** If you're considering using it in a real, production system then you should probably re-evaluate.
 As with all JavaScript obfuscation, *confoundjs* is trivial to defeat if you know how.
 
-**confoundjs encodes its payload losslessly!** This means that all comments, variable/function names, whitespace, etc. are preserved in full! You will probably want to apply other forms of JavaScript minification/obfuscation/transformation before applying *confoundjs*.
+**confoundjs encodes its payload losslessly.** This means that all comments, variable/function names, whitespace, etc. are preserved in full. You will probably want to apply other forms of JavaScript minification/obfuscation/transformation before applying *confoundjs*.
 
 ### Side-by-side with jsfuck
 + **Mission Statement**
@@ -69,6 +69,9 @@ As with all JavaScript obfuscation, *confoundjs* is trivial to defeat if you kno
 + **Encoding Speed**
   + *jsfuck* tends to be a faster encoder for smaller outputs. Larger outputs have a high string manipulation cost and can take quite some time to complete.
   + *confoundjs* is slower for smaller inputs, but scales linearly with payload size. The encoder must also perform a (relatively expensive) initialisation routine. This initialisation does not need to be repeated if multiple encodings are performed in one session.
+  
+### How does it work?
+For now the definitive reference is the source code. Check back later and I may have gotten around to writing an overview.
   
 ### Defeating confoundjs
 Dynamic languages are the proverbial double-edged sword. On one edge is the (slightly perverse) trickery which allows us to create an obfuscation scheme like this in the first place. On the other edge is the simplicity of rendering such a scheme moot.
