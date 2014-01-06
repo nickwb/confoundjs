@@ -56,14 +56,16 @@
     <script src="web-assets/js/jquery-2.0.3.min.js"></script>
     <script src="web-assets/js/bootstrap.min.js"></script>
     
-    <!-- underscore: CounfoundJS dependency -->
+    <!-- CounfoundJS dependencies: underscore and uglify -->
     <script src="lib/underscore.js"></script>
+    <script src="lib/uglify.js"></script>
     
     <!-- ConfoundJS modules -->
     <script src="numbers.js"></script>
     <script src="bitpack.js"></script>
     <script src="strings.js"></script> <!-- depends on numbers -->
     <script src="runtime.js"></script> <!-- depends on strings, bitpack, numbers -->
+    <script src="sourcetransform.js"></script> <!-- depends on strings, numbers -->
     
     <!-- This example/test app -->
     <script src="main.js"></script> <!-- depends on runtime -->

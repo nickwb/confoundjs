@@ -485,8 +485,12 @@ ConfoundJS.numbers = (function() {
         console.log('Numbers: initialisation complete.');
     };
     
+    module.canGetSymbolic = function(val) {
+        return isInteger(val) && Math.abs(val) < MAX_SAFE_INT;
+    };
+    
     module.getSymbolic = function(val) {
-        if(!isInteger(val) && Math.abs(val) < MAX_SAFE_INT) {
+        if(!isInteger(val) || Math.abs(val) > MAX_SAFE_INT) {
             throw 'Only integers less than ' + MAX_SAFE_INT + ' are supported.';
         }
         
