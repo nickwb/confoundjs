@@ -130,8 +130,6 @@ ConfoundJS.runtime = (function() {
         // Choose a random pathway
         var path = pathways[Math.floor(Math.random() * pathways.length)];
         
-        console.log(path);
-        
         // Replace strings in the pathway with their obscured equivalents
         path = path.replace(/"([a-zA-Z]+)"/g, function(match, innerString) {
             // Special cases for strings in our state table
@@ -141,8 +139,6 @@ ConfoundJS.runtime = (function() {
             
             return strings.obscureString(innerString);
         });
-        
-        console.log(path);
         
         return '(' + path + ')';
     };
