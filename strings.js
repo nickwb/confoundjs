@@ -42,7 +42,7 @@ ConfoundJS.strings = (function() {
         map['s'] = expand('false[3]');
         map['t'] = expand('true[0]');
         map['u'] = expand('undefined[0]');
-        // v
+        // v - transient
         // w
         // x
         map['y'] = expand('Infinity[7]');
@@ -59,6 +59,7 @@ ConfoundJS.strings = (function() {
         map['g'] = null;
         map['h'] = null;
         map['m'] = null;
+        map['v'] = null;
     };
     
     module.mapToString = function(ref) {

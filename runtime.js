@@ -15,6 +15,7 @@ ConfoundJS.runtime = (function() {
         
         stateTable.reserve('strH');
         stateTable.reserve('strM');
+        stateTable.reserve('strV');
         stateTable.reserve('strLength');
         stateTable.reserve('strConstructor');
         stateTable.reserve('strToString');
@@ -102,8 +103,48 @@ ConfoundJS.runtime = (function() {
     };
     
     module.writeFunctionConstructor = function() {
-        // array.join.constructor
-        return '([][' + strings.obscureString('join') + '][' + stateTable.getReference('strConstructor') + '])';
+        var pathways = [
+            '[]["join"]["constructor"]',
+            '[]["shift"]["constructor"]',
+            '[]["unshift"]["constructor"]',
+            '[]["sort"]["constructor"]',
+            '[]["concat"]["constructor"]',
+            '[]["slice"]["constructor"]',
+            //'[]["find"]["constructor"]', // Browser Support?
+            '[]["some"]["constructor"]', // Browser Support?
+            '[]["filter"]["constructor"]', // Browser Support?
+            '[]["reduce"]["constructor"]', // Browser Support?
+            '[]["toString"]["constructor"]',
+            '[]["valueOf"]["constructor"]',
+            '({})["toString"]["constructor"]',
+            '({})["valueOf"]["constructor"]',
+            '(/./)["test"]["constructor"]',
+            '(/./)["toString"]["constructor"]',
+            '(/./)["valueOf"]["constructor"]',
+            '(![])["toString"]["constructor"]',
+            '(![])["valueOf"]["constructor"]',
+            '(+![])["toString"]["constructor"]',
+            '(+![])["valueOf"]["constructor"]'
+        ];
+        
+        // Choose a random pathway
+        var path = pathways[Math.floor(Math.random() * pathways.length)];
+        
+        console.log(path);
+        
+        // Replace strings in the pathway with their obscured equivalents
+        path = path.replace(/"([a-zA-Z]+)"/g, function(match, innerString) {
+            // Special cases for strings in our state table
+            if(innerString === 'constructor') { return stateTable.getReference('strConstructor'); }
+            if(innerString === 'toString') { return stateTable.getReference('strToString'); }
+            if(innerString === 'length') { return stateTable.getReference('strLength'); }
+            
+            return strings.obscureString(innerString);
+        });
+        
+        console.log(path);
+        
+        return '(' + path + ')';
     };
     
     module.writeUnpacker = function() {
@@ -174,12 +215,16 @@ ConfoundJS.runtime = (function() {
         strings.mapToString(stateTable.getReference('strToString'));
         
         // Generate the "h" string
-        js += stateTable.getReference('strH') + '=(' + numbers.getSymbolic(17) + ')[' + stateTable.getReference('strToString') + '](' + numbers.getSymbolic(18) + ');';
+        js += stateTable.getReference('strH') + '=(' + numbers.getSymbolic(17) + ')[' + stateTable.getReference('strToString') + '](' + numbers.getSymbolic(36) + ');';
         strings.mapSingle('h', stateTable.getReference('strH'));
         
         // Generate the "m" string
-        js += stateTable.getReference('strM') + '=(' + numbers.getSymbolic(22) + ')[' + stateTable.getReference('strToString') + '](' + numbers.getSymbolic(23) + ');';
+        js += stateTable.getReference('strM') + '=(' + numbers.getSymbolic(22) + ')[' + stateTable.getReference('strToString') + '](' + numbers.getSymbolic(36) + ');';
         strings.mapSingle('m', stateTable.getReference('strM'));
+        
+        // Generate the "v" string
+        js += stateTable.getReference('strV') + '=(' + numbers.getSymbolic(31) + ')[' + stateTable.getReference('strToString') + '](' + numbers.getSymbolic(36) + ');';
+        strings.mapSingle('v', stateTable.getReference('strV'));
         
         // Generate the "length" string
         js += stateTable.getReference('strLength') + '=' + strings.obscureString('length') + ';';
@@ -213,12 +258,14 @@ ConfoundJS.runtime = (function() {
             stateTable.resetState();
             stateTable.setState('strH', null);
             stateTable.setState('strM', null);
+            stateTable.setState('strV', null);
             stateTable.setState('strLength', null);
             stateTable.setState('strConstructor', strings.obscureString('constructor'));
             stateTable.setState('strToString', null);
             stateTable.setState('fnFromCharCode', null);
-            stateTable.setState('fnUnpack', module.writeUnpacker());
+            // Generate the evaluator before the unpacker
             stateTable.setState('fnEvalute', module.writeEvaluator());
+            stateTable.setState('fnUnpack', module.writeUnpacker());
             
             key = bitpack.randomKey();
             
