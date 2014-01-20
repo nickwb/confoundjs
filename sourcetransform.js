@@ -113,14 +113,25 @@ ConfoundJS.sourceTransform = (function() {
         }
     });
     
+    var numberRequiresParenthesis = function(parent, stack) {
+        if(parent instanceof ugly.AST_Sub) { return false; }
+        if(parent instanceof ugly.AST_VarDef) { return false; }
+        if(parent instanceof ugly.AST_ObjectProperty) { return false; }
+        if(parent instanceof ugly.AST_Array) { return false; }
+        if(parent instanceof ugly.AST_Conditional) { return false; }
+        
+        return true;
+    };
+    
     var numberTransformer = new ugly.TreeTransformer(null, function(node){
         if (node instanceof ugly.AST_Number) {
             if(numbers.canGetSymbolic(node.getValue())) {
-                var symbolic = numbers.getSymbolic(node.getValue());
-                var parent = numberTransformer.parent();
+                var symbolic = numbers.getSymbolic(node.getValue()),
+                    parent = numberTransformer.parent(),
+                    stack = numberTransformer.stack;
                 
                 // Assignments, element of array, object property
-                if(!(parent instanceof ugly.AST_Sub)) {
+                if(numberRequiresParenthesis(parent, stack)) {
                     symbolic = '(' + symbolic + ')';
                 }
                 
