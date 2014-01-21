@@ -3,6 +3,9 @@ ConfoundJS.strings = (function() {
     
     var numbers = ConfoundJS.numbers;
     
+    if(!_) { throw "strings: a required dependency, underscore.js, was not found." };
+    if(!numbers) { throw "strings: a required dependency, ConfoundJS.numbers, was not found." };
+    
     var module = {},
         map = {};
         

@@ -10,22 +10,25 @@ $(function() {
         $('#counfoundBtnContainer').slideUp();
         $('#progressInfo').slideDown(doGenerate);
         
-        function onProgress(complete) {
-            $('#progressPercent').text( (complete * 100).toFixed(2) + '%' );
-        }
-        
         function doGenerate () {
-            ConfoundJS.numbers.deepSearch = !!$('#deep-numbers').prop('checked');
-            ConfoundJS.runtime.generateRuntime($jsIn.val(), onProgress, function(js) {
-                $jsOut.val(js);
+            var options = {
+                optimalNumbers: !!$('#deep-numbers').prop('checked'),
+                onProgress: function(status) { $('#progressStatus').text( status ); }
+            };
+            
+            $('#progressStatus').text( 'Building output' );
+            
+            ConfoundJS.generate($jsIn.val(), options).then(function(result) {
+                $jsOut.val(result);
                 
                 $('#counfoundBtnContainer').slideDown();
                 $('#progressInfo').slideUp();
                 
-                $('#countInfo strong').text($jsOut.val().length);
+                $('#countInfo strong').text(result.length);
                 $('#countInfo span').text($jsIn.val().length);
                 $('#countInfo').show();
             });
+
         }
         
     });

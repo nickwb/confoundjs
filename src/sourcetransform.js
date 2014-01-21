@@ -4,9 +4,12 @@ ConfoundJS.sourceTransform = (function() {
     var numbers = ConfoundJS.numbers, strings = ConfoundJS.strings;
     var ugly = UglifyJS;
     
+    if(!Promise) { throw "sourcetransform: a required dependency, Promise.js, was not found." };
+    if(!ugly) { throw "sourcetransform: a required dependency, UglifyJS, was not found." };
+    if(!numbers) { throw "sourcetransform: a required dependency, ConfoundJS.numbers, was not found." };
+    if(!strings) { throw "sourcetransform: a required dependency, ConfoundJS.strings, was not found." };
     
     var module = {};
-    
     
     var AST_ConfoundString = ugly.DEFNODE('ConfoundString', 'value', {
         $documentation: "A confounding string literal",
@@ -149,26 +152,45 @@ ConfoundJS.sourceTransform = (function() {
         stringMap = {};
     };
     
-    module.doSourceTransform = function (input) {
-        reset();
-        var ast = ugly.parse(input);
-        
-        ast.figure_out_scope();
-        
-        ast = ast.transform(ugly.Compressor());
-        ast = ast.transform(dotToSub);
-        ast = ast.transform(stringTransformer);
-        ast = ast.transform(alternateBooleans);
-        ast = ast.transform(numberTransformer);
-        
-        ast.figure_out_scope();
-        
-        // Allow the string table to be mangled
-        ast.variables.get('__counfoundjs_string_table').global = false;
-        
-        ast.mangle_names();
-        
-        console.log(ast.print_to_string());
+    module.doTransform = function (options) {
+        return new Promise(function(resolve, reject) {
+            reset();
+            
+            options.onProgress('Parsing payload');
+            var ast = ugly.parse(options._payload);
+            
+            options.onProgress('Calculating scope');
+            ast.figure_out_scope();
+            
+            options.onProgress('Minifying');
+            ast = ast.transform(ugly.Compressor());
+            
+            options.onProgress('Extracting dot notations');
+            ast = ast.transform(dotToSub);
+            
+            options.onProgress('Obscuring strings');
+            ast = ast.transform(stringTransformer);
+            
+            options.onProgress('Obscuring booleans');
+            ast = ast.transform(alternateBooleans);
+            
+            options.onProgress('Obscuring numbers');
+            ast = ast.transform(numberTransformer);
+            
+            options.onProgress('Calculating scope');
+            ast.figure_out_scope();
+            
+            
+            options.onProgress('Mangling variables');
+            
+            // Allow the string table to be mangled
+            ast.variables.get('__counfoundjs_string_table').global = false;
+            ast.mangle_names();
+            
+            options.onProgress('Generating source');
+            options._payload = ast.print_to_string();
+            resolve(options);
+        });
     };
     
     return module;

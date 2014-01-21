@@ -1,6 +1,8 @@
 var ConfoundJS = ConfoundJS || {};
 ConfoundJS.numbers = (function() {
 
+    if(!_) { throw "numbers: a required dependency, underscore.js, was not found." };
+
     var BASE_MAP_SIZE = 100;
     var ADD_SUBTRACT_WINDOW = 100;
     var DIVIDE_WINDOW = 20;
@@ -8,7 +10,6 @@ ConfoundJS.numbers = (function() {
     var MAX_SAFE_INT = Math.pow(2, 31) - 1;
     
     var module = {};
-    module.deepSearch = true;
 
     var exp = {},
         map = {};
@@ -272,7 +273,8 @@ ConfoundJS.numbers = (function() {
     exp.chooseBest = function(value, options) {
     
         var defaults = {
-            skipLarger: false
+            skipLarger: false,
+            deepSearch: true
         };
         
         options = _.extend({}, defaults, options);        
@@ -411,7 +413,7 @@ ConfoundJS.numbers = (function() {
             map[value] = winner.expr;
             
             // Don't attempt deep searches?
-            if(module.deepSearch === false) {
+            if(options.deepSearch === false) {
                 break;
             }
             
@@ -457,8 +459,6 @@ ConfoundJS.numbers = (function() {
         if(isInitialised) { return };
         isInitialised = true;
         
-        console.log('Numbers: initialising base map.');
-        
         map[0] = exp.unit(0);
         map[1] = exp.unit(1);
         map[2] = exp.binary(1, ADD, 1);
@@ -481,15 +481,15 @@ ConfoundJS.numbers = (function() {
         for(var i = 11; i <= BASE_MAP_SIZE; i++) {
             exp.chooseBest(i);
         }
-        
-        console.log('Numbers: initialisation complete.');
     };
     
     module.canGetSymbolic = function(val) {
         return isInteger(val) && Math.abs(val) < MAX_SAFE_INT;
     };
     
-    module.getSymbolic = function(val) {
+    module.getSymbolic = function(val, options) {
+        options = options || { optimalNumbers: true };
+    
         if(!isInteger(val) || Math.abs(val) > MAX_SAFE_INT) {
             throw 'Only integers less than ' + MAX_SAFE_INT + ' are supported.';
         }
@@ -500,10 +500,22 @@ ConfoundJS.numbers = (function() {
             val = val * -1;
         }
     
+        if(options.onProgress) {
+            options.onProgress('Initialising number map.');
+        }
+        
         initialiseMap();
-    
-        var result = exp.map(val).build(exp.buildParams({ coerce: true })),
-            symbolic = result.symbolic,
+        
+        var result = map[val];
+        
+        if(!result) {
+            exp.chooseBest(val, { deepSearch: options.optimalNumbers });
+            result = map[val];
+        }
+        
+        result = result.build(exp.buildParams({ coerce: true }));
+        
+        var symbolic = result.symbolic,
             validator = new Function('return (' + symbolic + ');');
         
         if(validator() !== val) {
@@ -528,6 +540,7 @@ ConfoundJS.numbers = (function() {
             }
             return input;
         };
+        
         var padLeft = _.partial(pad, 'left');
         var padRight = _.partial(pad, 'right');
         

@@ -39,7 +39,7 @@
             <div class="confound-button-container" id="counfoundBtnContainer">
                 <button class="btn btn-primary btn-lg" id="doConfound">Confound!</button>
             </div>
-            <div class="alert alert-info" id="progressInfo" style="display:none"><strong>Thinking Hard!</strong> This may take several minutes. (<strong id="progressPercent">0.00%</strong> complete).</div>
+            <div class="alert alert-info" id="progressInfo" style="display:none"><strong>Thinking Hard!</strong> This may take several minutes. (<span id="progressStatus"></span>).</div>
             <div class="form-group">
                 <label for="jsOutput">Confounding JavaScript:</label>
                 <textarea class="form-control" id="jsOutput"></textarea>
@@ -56,18 +56,20 @@
     <script src="web-assets/js/jquery-2.0.3.min.js"></script>
     <script src="web-assets/js/bootstrap.min.js"></script>
     
-    <!-- CounfoundJS dependencies: underscore and uglify -->
+    <!-- CounfoundJS dependencies -->
     <script src="lib/underscore.js"></script>
     <script src="lib/uglify.js"></script>
+    <script src="lib/promise.js"></script>
     
     <!-- ConfoundJS modules -->
     <script src="src/numbers.js"></script>
     <script src="src/bitpack.js"></script>
-    <script src="src/strings.js"></script> <!-- depends on numbers -->
-    <script src="src/runtime.js"></script> <!-- depends on strings, bitpack, numbers -->
-    <script src="src/sourcetransform.js"></script> <!-- depends on strings, numbers -->
+    <script src="src/strings.js"></script>
+    <script src="src/runtime.js"></script>
+    <script src="src/sourcetransform.js"></script>
+    <script src="src/api.js"></script>
     
     <!-- This example/test app -->
-    <script src="main.js"></script> <!-- depends on runtime -->
+    <script src="main.js"></script>
   </body>
 </html>

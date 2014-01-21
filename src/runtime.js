@@ -3,6 +3,12 @@ ConfoundJS.runtime = (function() {
     
     var numbers = ConfoundJS.numbers, strings = ConfoundJS.strings, bitpack = ConfoundJS.bitpack;
     
+    if(!Promise) { throw "runtime: a required dependency, Promise.js, was not found." };
+    if(!_) { throw "runtime: a required dependency, underscore.js, was not found." };
+    if(!numbers) { throw "runtime: a required dependency, ConfoundJS.numbers, was not found." };
+    if(!strings) { throw "runtime: a required dependency, ConfoundJS.strings, was not found." };
+    if(!bitpack) { throw "runtime: a required dependency, ConfoundJS.bitpack, was not found." };
+    
     var module = {};
     
     var initialise = function() {
@@ -240,70 +246,74 @@ ConfoundJS.runtime = (function() {
         return js;
     };
     
-    module.generateRuntime = function(payload, onProgress, onResult) {
+    module.generateRuntime = function(options) {
+    
+        return new Promise(function(resolve, reject) {
         
-        onProgress = _.isFunction(onProgress) ? onProgress : function () {};
-        
-        var WORK_INTERVAL = 20;
-        var key, packed, encoded, js, i;
-        
-        function beforeEncode() {
-            onProgress(0);
-            initialise();
+            var WORK_INTERVAL = 20;
+            var key, packed, encoded, js, i;
             
-            stateTable.resetState();
-            stateTable.setState('strH', null);
-            stateTable.setState('strM', null);
-            stateTable.setState('strV', null);
-            stateTable.setState('strLength', null);
-            stateTable.setState('strConstructor', strings.obscureString('constructor'));
-            stateTable.setState('strToString', null);
-            stateTable.setState('fnFromCharCode', null);
-            // Generate the evaluator before the unpacker
-            stateTable.setState('fnEvalute', module.writeEvaluator());
-            stateTable.setState('fnUnpack', module.writeUnpacker());
-            
-            key = bitpack.randomKey();
-            
-            packed = bitpack.pack(payload, key);
-            encoded = [];
-            totalProgress = packed.length + 2;
-            i = 0;
-            
-            setTimeout(encodeBlock, WORK_INTERVAL);
-        }
-        
-        function encodeBlock() {
-            encoded.push(numbers.getSymbolic(packed[i]));
-            i++;
-            
-            onProgress( i / totalProgress );
-            
-            if(i === packed.length) {
-                setTimeout(afterEncode, WORK_INTERVAL);
-                return;
+            function beforeEncode() {
+                options.onProgress('Generating the runtime decoder');
+                initialise();
+                
+                stateTable.resetState();
+                stateTable.setState('strH', null);
+                stateTable.setState('strM', null);
+                stateTable.setState('strV', null);
+                stateTable.setState('strLength', null);
+                stateTable.setState('strConstructor', strings.obscureString('constructor'));
+                stateTable.setState('strToString', null);
+                stateTable.setState('fnFromCharCode', null);
+                // Generate the evaluator before the unpacker
+                stateTable.setState('fnEvalute', module.writeEvaluator());
+                stateTable.setState('fnUnpack', module.writeUnpacker());
+                
+                key = bitpack.randomKey();
+                
+                packed = bitpack.pack(options._payload, key);
+                encoded = [];
+                i = 0;
+                
+                setTimeout(encodeBlock, WORK_INTERVAL);
             }
             
-            setTimeout(encodeBlock, WORK_INTERVAL);
-        }
+            function encodeBlock() {
+                encoded.push(numbers.getSymbolic(packed[i], options));
+                i++;
+                
+                options.onProgress('Encoding block: ' + i + ' of ' + packed.length);
+                
+                if(i === packed.length) {
+                    setTimeout(afterEncode, WORK_INTERVAL);
+                    return;
+                }
+                
+                setTimeout(encodeBlock, WORK_INTERVAL);
+            }
+            
+            function afterEncode() {
+                encoded = '[' + encoded.join(',') + ']';
+                
+                options.onProgress('Assembling the runtime');
+                
+                stateTable.setState('payload', encoded);
+                stateTable.setState('key', numbers.getSymbolic(key, options));
+                
+                js = '';
+                
+                js += '(function(' + stateTable.variable + '){';
+                js += stateTable.writeAll();
+                js += stateTable.getReference('fnEvalute') + '()';
+                js += '})({});';
+                
+                options._payload = js;
+                resolve(options);
+            }
+            
+            beforeEncode();
         
-        function afterEncode() {
-            encoded = '[' + encoded.join(',') + ']';
-            
-            stateTable.setState('payload', encoded);
-            stateTable.setState('key', numbers.getSymbolic(key));
-            
-            js = '';
-            
-            js += '(function(' + stateTable.variable + '){';
-            js += stateTable.writeAll();
-            js += stateTable.getReference('fnEvalute') + '()';
-            js += '})({});';
-            
-            onResult(js);
-        }
-        
-        beforeEncode();
+        });
     };
     
     return module;
