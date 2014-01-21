@@ -8,9 +8,15 @@
     if(!sourceTransform) { throw "api: a required dependency, ConfoundJS.sourceTransform, was not found." };
     
     var defaultOptions = {
-        optimalNumbers: false,
-        useRuntime: true,
         useSourceTransform: true,
+        minifySource: true,
+        transformDotNotation: true,
+        transformStrings: true,
+        transformBooleans: true,
+        transformNumbers: true,
+        mangleVariables: true,
+        useRuntime: false,
+        optimalNumbers: false,
         onProgress: function(status) { }
     };
 

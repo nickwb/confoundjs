@@ -34,7 +34,18 @@
             <div class="form-group">
                 <label for="jsInput">Input JavaScript Source:</label>
                 <textarea class="form-control" id="jsInput">alert('Hello World');</textarea>
-                <label class="num-optimise"><input type="checkbox" id="deep-numbers" checked="checked" />Optimise numeric expressions? (slower)</label>
+                
+            </div>
+            <div class="counfound-options">
+                <label><input type="checkbox" id="option-useSourceTransform" checked="checked" />Use source transformer (<strong>Warning:</strong> disabling this will encode your input losslessly)</label>
+                <label><input type="checkbox" id="option-minifySource" checked="checked" class="only-with-st" />Minify source (recommended)</label>
+                <label><input type="checkbox" id="option-mangleVariables" checked="checked" class="only-with-st" />Mangle variables (recommended)</label>
+                <label><input type="checkbox" id="option-transformDotNotation" checked="checked" class="only-with-st" />Transform dot notations</label>
+                <label><input type="checkbox" id="option-transformStrings" checked="checked" class="only-with-st" />Transform strings (Adds stronger obfuscation, but produces larger outputs)</label>
+                <label><input type="checkbox" id="option-transformBooleans" checked="checked" class="only-with-st" />Transform booleans</label>
+                <label><input type="checkbox" id="option-transformNumbers" checked="checked" class="only-with-st" />Transform numbers</label>
+                <label><input type="checkbox" id="option-useRuntime" />Use runtime decoder (Adds stronger obfuscation, but produces larger outputs)</label> 
+                <label><input type="checkbox" id="option-optimalNumbers" />Optimise numeric expressions (<strong>Warning:</strong> slow. Can produce smaller outputs)</label>
             </div>
             <div class="confound-button-container" id="counfoundBtnContainer">
                 <button class="btn btn-primary btn-lg" id="doConfound">Confound!</button>

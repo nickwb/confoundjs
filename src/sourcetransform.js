@@ -126,10 +126,13 @@ ConfoundJS.sourceTransform = (function() {
         return true;
     };
     
+    var shouldUseOptimalNumbers = true;
+    
     var numberTransformer = new ugly.TreeTransformer(null, function(node){
         if (node instanceof ugly.AST_Number) {
             if(numbers.canGetSymbolic(node.getValue())) {
-                var symbolic = numbers.getSymbolic(node.getValue()),
+                var options = {optimalNumbers: shouldUseOptimalNumbers},
+                    symbolic = numbers.getSymbolic(node.getValue(), options),
                     parent = numberTransformer.parent(),
                     stack = numberTransformer.stack;
                 
@@ -154,42 +157,80 @@ ConfoundJS.sourceTransform = (function() {
     
     module.doTransform = function (options) {
         return new Promise(function(resolve, reject) {
+        
+            var tasks = [];
+            
+            var step = function(describe, fn) {
+                tasks.push({ describe: describe, fn: fn });
+            };
+            
+            var transform = function(describe, xform) {
+                step(describe, function() { ast = ast.transform(xform); });
+            };
+            
+            var WORK_INTERVAL = 20;
+            
+            var process = function() {
+                var item = tasks.shift();
+                
+                var run = function() {
+                    item.fn();
+                    if(tasks.length > 0) {
+                        setTimeout(process, 0);
+                    }
+                };
+                
+                options.onProgress(item.describe);
+                setTimeout(run, WORK_INTERVAL);
+            };
+            
             reset();
+            var ast;
             
-            options.onProgress('Parsing payload');
-            var ast = ugly.parse(options._payload);
+            var do_calculate_scope = function() { ast.figure_out_scope(); };
             
-            options.onProgress('Calculating scope');
-            ast.figure_out_scope();
+            step('Parsing payload', function() { ast = ugly.parse(options._payload); });            
+            step('Calculating scope', do_calculate_scope);
             
-            options.onProgress('Minifying');
-            ast = ast.transform(ugly.Compressor());
+            if(options.minifySource) {
+                transform('Minifying', ugly.Compressor());
+            }
             
-            options.onProgress('Extracting dot notations');
-            ast = ast.transform(dotToSub);
+            if(options.transformDotNotation) {
+                transform('Transforming dot notations', dotToSub);
+            }
             
-            options.onProgress('Obscuring strings');
-            ast = ast.transform(stringTransformer);
+            if(options.transformStrings) {
+                transform('Transforming strings', stringTransformer);
+            }
             
-            options.onProgress('Obscuring booleans');
-            ast = ast.transform(alternateBooleans);
+            if(options.transformBooleans) {
+                transform('Transforming booleans', alternateBooleans);
+            }
             
-            options.onProgress('Obscuring numbers');
-            ast = ast.transform(numberTransformer);
+            if(options.transformNumbers) {
+                shouldUseOptimalNumbers = options.optimalNumbers;
+                transform('Obscuring numbers', numberTransformer);
+            }
             
-            options.onProgress('Calculating scope');
-            ast.figure_out_scope();
+            step('Calculating scope', do_calculate_scope);
             
+            if(options.mangleVariables) {
+                step('Mangling variables', function() {
+                    if(options.transformStrings) {
+                        // Allow the string table to be mangled
+                        ast.variables.get('__counfoundjs_string_table').global = false;
+                    }
+                    ast.mangle_names();
+                });
+            }
             
-            options.onProgress('Mangling variables');
+            step('Generating source', function() {
+                options._payload = ast.print_to_string();
+                resolve(options);
+            });
             
-            // Allow the string table to be mangled
-            ast.variables.get('__counfoundjs_string_table').global = false;
-            ast.mangle_names();
-            
-            options.onProgress('Generating source');
-            options._payload = ast.print_to_string();
-            resolve(options);
+            process();
         });
     };
     

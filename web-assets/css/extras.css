@@ -16,11 +16,20 @@ textarea.form-control {
     margin-top: 10px;
 }
 
-.num-optimise {
-    font-weight: normal;
+.counfound-options {
     margin-top: 10px;
+    margin-bottom: 15px;
 }
 
-.num-optimise input {
+.counfound-options label {
+    font-weight: normal;
+    display: block;
+}
+
+.counfound-options label.disabled {
+    color: #aaa;
+}
+
+.counfound-options input {
     margin-right: 5px;
 }
