@@ -1,1 +1,2 @@
-* Compile time obfuscation using the uglifyjs2 api.
+* Update README
+* Fix escaped strings \n, \r etc. in string literals
