@@ -11,6 +11,7 @@
         useSourceTransform: true,
         minifySource: true,
         transformDotNotation: true,
+        liftStrings: true,
         transformStrings: true,
         transformBooleans: true,
         transformNumbers: true,

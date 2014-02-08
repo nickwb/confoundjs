@@ -25,6 +25,7 @@ $(function() {
                 useSourceTransform: checkbox('useSourceTransform'),
                 minifySource: checkbox('minifySource'),
                 transformDotNotation: checkbox('transformDotNotation'),
+                liftStrings: checkbox('liftStrings'),
                 transformStrings: checkbox('transformStrings'),
                 transformBooleans: checkbox('transformBooleans'),
                 transformNumbers: checkbox('transformNumbers'),

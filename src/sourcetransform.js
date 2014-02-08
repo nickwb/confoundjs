@@ -32,6 +32,10 @@ ConfoundJS.sourceTransform = (function() {
         }
     }, ugly.AST_Constant);
     
+    
+    ///////////////////////////////////////////////////////////////////////////
+    ////  Transform Dot Notations
+    ///////////////////////////////////////////////////////////////////////////
     var dotToSub = new ugly.TreeTransformer(null, function(node){
     
         if(node instanceof ugly.AST_Dot) {
@@ -45,6 +49,10 @@ ConfoundJS.sourceTransform = (function() {
         
     });
     
+    
+    ///////////////////////////////////////////////////////////////////////////
+    ////  Lift Strings
+    ///////////////////////////////////////////////////////////////////////////
     var stringTable = [],
         stringMap = {};
         
@@ -70,13 +78,13 @@ ConfoundJS.sourceTransform = (function() {
         });
     };
     
-    var stringTransformer = new ugly.TreeTransformer(null, function(node){
+    var stringLifter = new ugly.TreeTransformer(null, function(node){
         if (node instanceof ugly.AST_Toplevel) {
             
             var tableElms = [];
             
             for(var i = 0; i < stringTable.length; i++) {
-                tableElms.push( new AST_ConfoundString({ value: strings.obscureString(stringTable[i]) }) );
+                tableElms.push( new ugly.AST_String({ value: stringTable[i] }) );
             }
             
             var table = new ugly.AST_Var({
@@ -96,6 +104,18 @@ ConfoundJS.sourceTransform = (function() {
         }
     });
     
+    ///////////////////////////////////////////////////////////////////////////
+    ////  Transform Strings
+    ///////////////////////////////////////////////////////////////////////////
+    var stringTransformer = new ugly.TreeTransformer(null, function(node){
+        if (node instanceof ugly.AST_String) {
+            return new AST_ConfoundString({ value: strings.obscureString(node.getValue()) });
+        }
+    });
+    
+    ///////////////////////////////////////////////////////////////////////////
+    ////  Transform Booleans
+    ///////////////////////////////////////////////////////////////////////////
     var makeBoolean = function(b, node) {
         b = !!b;
         return new AST_ConfoundBoolean({
@@ -116,6 +136,9 @@ ConfoundJS.sourceTransform = (function() {
         }
     });
     
+    ///////////////////////////////////////////////////////////////////////////
+    ////  Transform Numbers
+    ///////////////////////////////////////////////////////////////////////////
     var numberRequiresParenthesis = function(parent, stack) {
         if(parent instanceof ugly.AST_Sub) { return false; }
         if(parent instanceof ugly.AST_VarDef) { return false; }
@@ -150,6 +173,9 @@ ConfoundJS.sourceTransform = (function() {
         }
     });
     
+    ///////////////////////////////////////////////////////////////////////////
+    ////  Source Transformation
+    ///////////////////////////////////////////////////////////////////////////
     var reset = function() {
         stringTable = [];
         stringMap = {};
@@ -200,6 +226,10 @@ ConfoundJS.sourceTransform = (function() {
                 transform('Transforming dot notations', dotToSub);
             }
             
+            if(options.liftStrings) {
+                transform('Lifting strings', stringLifter);
+            }
+            
             if(options.transformStrings) {
                 transform('Transforming strings', stringTransformer);
             }
@@ -217,7 +247,7 @@ ConfoundJS.sourceTransform = (function() {
             
             if(options.mangleVariables) {
                 step('Mangling variables', function() {
-                    if(options.transformStrings) {
+                    if(options.liftStrings) {
                         // Allow the string table to be mangled
                         ast.variables.get('__counfoundjs_string_table').global = false;
                     }
