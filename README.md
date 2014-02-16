@@ -5,82 +5,37 @@ An experiment in JavaScript obfuscation.
 **jsfuck**, whilst delivering on raw confusion/obfuscation, suffers from a catastrophically high encoding overhead.
 **confoundjs** attempts to create a similarly confounding output, but with a much more reasonable overhead.
 
-#### In short
+### A simple example
+**confoundjs** is an obfuscator with a lot of options. These options allow the user to choose the balance between the strength of the obfuscation and the size of the output. It will generate wildly different output based on the options you select, so consequently it's somewhat misleading to convey **confoundjs** in just a single example. The author encourages you to explore the options available.
+
+*Input*
+
 `alert('Hello World');`
 
-*becomes*
+*Output*
 
 ```
-(function(ʃ){ʃ[+!+[]+!+[]+!+[]+!+[]]=function(ѥ,Չ,ᴤ,ӣ,Ɣ,ϟ,ͽ,Δ,ᵷ){for(ᴤ=+!!ѥ,Δ=[]+[],ᵷ=ѥ[+![]];
-ᴤ<ѥ[ʃ[+!+[]+!+[]]];ᴤ++){ͽ=ϟ=ѥ[ᴤ];ϟ=ϟ^Չ;Ɣ=(ᴤ-ѥ[ʃ[+!+[]+!+[]]]==+!ѥ)?ᵷ:(+!+[]+!+[]+!+[]);for(ӣ=+
-!Չ;ӣ<Ɣ;ӣ++){Δ+=ʃ[+[]](ϟ&(((!+[]+!+[])<<((!+[]+!+[]+!+[])<<!+[]))-!+[]));ϟ=ϟ>>(([+!+[]]+[+[]])-
-(!+[]+!+[]+!+[]));}Չ=(ͽ>>(+!+[]+!+[]+!+[]))^Չ}([][([]+{})[+!+[]+!+[]+!+[]]+([]+{})[+!+[]]+([][
-![]]+[])[([+!+[]]+[+[]])>>!+[]]+([][![]]+[])[+!+[]]][ʃ[(!+[]+!+[]+!+[])<<!+[]]])(ᵷ==ѥ[+![]]?Δ:
-Չ)();ѥ=![]};ʃ[([+!+[]]+[+[]])>>!+[]]=([+!+[]+!+[]]+[+!+[]+!+[]+!+[]]+[+[]]+[+!+[]]+[+[]]+[([+!
-+[]]+[+[]])>>!+[]]+[(!+[]+!+[]+!+[])<<!+[]])>>(!+[]+!+[]);ʃ[(!+[]+!+[]+!+[])<<!+[]]=([]+{})[([
-+!+[]]+[+[]])>>!+[]]+([]+{})[+!+[]]+([][![]]+[])[+!+[]]+(!{}+{})[+!+[]+!+[]+!+[]]+(!!{}+{})[+[
-]]+(!!{}+{})[+!+[]]+([][![]]+[])[+[]]+([]+{})[([+!+[]]+[+[]])>>!+[]]+(!!{}+{})[+[]]+([]+{})[+!
-+[]]+(!!{}+{})[+!+[]];ʃ[([+!+[]]+[+[]])-(!+[]+!+[]+!+[])]=[+[],([+!+[]]+[+!+[]]+[([+!+[]]+[+[]
-])>>!+[]]+[([+!+[]]+[+[]])-!+[]]+[([+!+[]]+[+[]])>>!+[]]+[+[]]+[+[]])-(([+!+[]]+[+!+[]])),+([(
-[+!+[]]+[+[]])>>!+[]]+[+!+[]+!+[]]+[+[]]+[([+!+[]]+[+[]])-!+[]]+[+[]]),([+!+[]+!+[]]+[+[]]+[+[
-]]+[+!+[]]+[([+!+[]]+[+[]])-(!+[]+!+[]+!+[])])<<((!+[]+!+[]+!+[])<<!+[]),([+!+[]]+[+!+[]+!+[]+
-!+[]+!+[]]+[+[]]+[+!+[]]+[+!+[]]+[+[]]+[+!+[]+!+[]+!+[]+!+[]]+[+!+[]])/(([+!+[]]+[+!+[]])),([+
-!+[]]+[+!+[]]+[+!+[]+!+[]]+[+!+[]+!+[]]+[+!+[]+!+[]]+[+!+[]+!+[]+!+[]+!+[]]+[+[]])-!+[],((!+[]
-+!+[]+!+[])<<!+[])*(([+!+[]]+[([+!+[]]+[+[]])-!+[]]+[([+!+[]]+[+[]])>>!+[]]+[+!+[]+!+[]+!+[]]+
-[+!+[]]+[+!+[]])),([+!+[]]+[+!+[]+!+[]+!+[]]+[([+!+[]]+[+[]])-!+[]]+[+!+[]]+[([+!+[]]+[+[]])-!
-+[]]+[([+!+[]]+[+[]])-(!+[]+!+[])])<<!+[]];ʃ[([+!+[]]+[+[]])-!+[]]=function(){ʃ[+!+[]]=(!!{}+{
-})[+[]]+([]+{})[+!+[]]+(((+![])+([]+[])[ʃ[(!+[]+!+[]+!+[])<<!+[]]])[(!{}+{})[+!+[]+!+[]+!+[]]+
-([][![]]+[])[+[]]+([]+{})[+!+[]+!+[]]+(!{}+{})[+!+[]+!+[]+!+[]]+(!!{}+{})[+[]]+(!!{}+{})[+!+[]
-]](+([+!+[]]+[+[]]),(!+[]+!+[]+!+[])<<!+[]));ʃ[([+!+[]]+[+[]])-(!+[]+!+[])]=((!+[]<<(!+[]+!+[]
-+!+[]+!+[]))+!+[])[ʃ[+!+[]]]((([+!+[]]+[+[]])-!+[])<<!+[]);ʃ[+!+[]+!+[]+!+[]]=(([+!+[]]+[+!+[]
-])<<!+[])[ʃ[+!+[]]]((([+!+[]]+[+!+[]])<<!+[])+!+[]);ʃ[+!+[]+!+[]]=(!{}+{})[+!+[]+!+[]]+(!!{}+{
-})[+!+[]+!+[]+!+[]]+([][![]]+[])[+!+[]]+(ʃ[+!+[]])[([+!+[]]+[+[]])-(!+[]+!+[]+!+[])]+(!!{}+{})
-[+[]]+(ʃ[([+!+[]]+[+[]])-(!+[]+!+[])]);ʃ[+[]]=([]+[])[ʃ[(!+[]+!+[]+!+[])<<!+[]]][(!{}+{})[+[]]
-+(!!{}+{})[+!+[]]+([]+{})[+!+[]]+(ʃ[+!+[]+!+[]+!+[]])+'C'+(ʃ[([+!+[]]+[+[]])-(!+[]+!+[])])+(!{
-}+{})[+!+[]]+(!!{}+{})[+!+[]]+'C'+([]+{})[+!+[]]+([][![]]+[])[+!+[]+!+[]]+(!!{}+{})[+!+[]+!+[]
-+!+[]]];ʃ[+!+[]+!+[]+!+[]+!+[]](ʃ[([+!+[]]+[+[]])-(!+[]+!+[]+!+[])],ʃ[([+!+[]]+[+[]])>>!+[]])}
-;ʃ[([+!+[]]+[+[]])-!+[]]()})({});
+var a=this,b=[(!{}+{})[+!+[]]+(!{}+{})[+!+[]+!+[]]+(!!{}+{})[+!+[]+!+[]+!+[]]+(
+!!{}+{})[+!+[]]+(!!{}+{})[+[]],'H'+(!!{}+{})[+!+[]+!+[]+!+[]]+(!{}+{})[+!+[]+!+
+[]]+(!{}+{})[+!+[]+!+[]]+([]+{})[+!+[]]+([]+{})[([+!+[]]+[+[]])-(!+[]+!+[]+!+[]
+)]+'W'+([]+{})[+!+[]]+(!!{}+{})[+!+[]]+(!{}+{})[+!+[]+!+[]]+([][![]]+[])[+!+[]+!
++[]]];a[b[+[]]](b[+!+[]]);
 ```
 
 ### A note of caution
 
-**confoundjs is a toy.** If you're considering using it in a real, production system then you should probably re-evaluate.
-As with all JavaScript obfuscation, *confoundjs* is trivial to defeat if you know how.
+**confoundjs is a toy.** Please evaluate it carefully before using it in a real, production system.
+As with all JavaScript obfuscation, **confoundjs** will not prevent skilled reverse-engineers from obtaining your code.
 
-**confoundjs encodes its payload losslessly.** This means that all comments, variable/function names, whitespace, etc. are preserved in full. You will probably want to apply other forms of JavaScript minification/obfuscation/transformation before applying *confoundjs*.
-
-### Side-by-side with jsfuck
-+ **Mission Statement**
-  + *jsfuck* aims to encode any possible JavaScript program using only 6 characters: `[]()!+`.
-  + *confoundjs* loosens these restrictions in order to deliver a more efficient output. 
-
-+ **Encoding Overhead**
-  + *jsfuck* requires around **800** characters to encode an empty payload. Additionally, each character in the payload requires around **1700** characters to encode, though this varies dramatically depending on the specific characters in your payload.
-  + *confoundjs* requires around **1900** characters to encode an empty payload. Additionally, each character in the payload requires around **40** characters to encode.
-  
-+ **Basic Construction**
-  + *jsfuck* represents and evaluates the payload in one (very long) expression. The payload is constructed by string concatenation, character-by-character, with each character encoded individually using a *jsfuck* determined sub-expression.
-  + *confoundjs* packs and encrypts the payload, and then builds an efficient representation of the packed payload. The output from *confoundjs* is bundled with a runtime unpacker/decrypter, which is responsible for extracting and evaluating the payload.
-
-+ **Evaluation Speed**
-  + *jsfuck* is stateless, and will evaluate identical sub-expressions tens, hundreds or thousands of times.
-  + *confoundjs* makes good use of state in order to generate outputs which are both efficient in size and in evaluation speed. Re-usable expressions which are expensive to encode are evaluated once and then stored for re-use. The cost to evaluate each packed block in the payload is small and fairly close to being constant.
-
-+ **Encoding Speed**
-  + *jsfuck* tends to be a faster encoder for smaller outputs. Larger outputs have a high string manipulation cost and can take quite some time to complete.
-  + *confoundjs* is slower for smaller inputs, but scales linearly with payload size. The encoder must also perform a (relatively expensive) initialisation routine. This initialisation does not need to be repeated if multiple encodings are performed in one session.
   
 ### How does it work?
-For now the definitive reference is the source code. Check back later and I may have gotten around to writing an overview.
-  
-### Defeating confoundjs
-Dynamic languages are the proverbial double-edged sword. On one edge is the (slightly perverse) trickery which allows us to create an obfuscation scheme like this in the first place. On the other edge is the simplicity of rendering such a scheme moot.
+**confoundjs** is an obfuscator with two main phases. The **source transformer** and the **runtime decoder**.
 
-The simplest way to defeat **confoundjs** is to execute the following code prior to the obfuscated code:
-```
-// For jsfuck, go for Array.prototype.filter.constructor instead!
-Array.prototype.join.constructor = function() {
-    console.log(arguments);
-    return Function.apply(this, arguments);
-};
-```
+The *source transformer* will parse the input code and modify it using a series of transformations. These transformations will obscure and re-arrange portions of your code, but without changing its behaviour.
+
+The *runtime decoder* packs and encodes its input, then combines it with the logic necessary to unpack and execute it at runtime. This phase will hide all of the control flow and logic of your program. Be aware that this phase is lossless - if the source transformer has been disabled then your complete/unmodified program can be extracted after it is unpacked.
+
+### Acknowledgements
+**confoundjs** is built using the following excellent libraries:
++ [UglifyJS2](https://github.com/mishoo/UglifyJS2) by the wonderful [@mishoo](https://github.com/mishoo)
++ [promise](https://github.com/then/promise) by the wonderful [@ForbesLindesay](https://github.com/ForbesLindesay)
