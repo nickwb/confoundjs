@@ -40,6 +40,7 @@
                 <label><input type="checkbox" id="option-useSourceTransform" checked="checked" />Use source transformer (<strong>Warning:</strong> disabling this will encode your input losslessly)</label>
                 <label><input type="checkbox" id="option-minifySource" checked="checked" class="only-with-st" />Minify source (recommended)</label>
                 <label><input type="checkbox" id="option-mangleVariables" checked="checked" class="only-with-st" />Mangle variables (recommended)</label>
+                <label><input type="checkbox" id="option-rereferenceGlobals" checked="checked" class="only-with-st" />Re-reference Globals</label>
                 <label><input type="checkbox" id="option-transformDotNotation" checked="checked" class="only-with-st" />Transform dot notations</label>
                 <label><input type="checkbox" id="option-liftStrings" checked="checked" class="only-with-st" />Lift strings (recommended)</label>
                 <label><input type="checkbox" id="option-transformStrings" checked="checked" class="only-with-st" />Transform strings (Adds stronger obfuscation, but produces larger outputs)</label>
@@ -78,6 +79,7 @@
     <script src="src/bitpack.js"></script>
     <script src="src/strings.js"></script>
     <script src="src/runtime.js"></script>
+    <script src="src/knownglobals.js"></script>
     <script src="src/sourcetransform.js"></script>
     <script src="src/api.js"></script>
     

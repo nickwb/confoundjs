@@ -10,6 +10,7 @@
     var defaultOptions = {
         useSourceTransform: true,
         minifySource: true,
+        rereferenceGlobals: true,
         transformDotNotation: true,
         liftStrings: true,
         transformStrings: true,

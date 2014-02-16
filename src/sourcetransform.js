@@ -11,6 +11,8 @@ ConfoundJS.sourceTransform = (function() {
     
     var module = {};
     
+    var AST_ConfoundVariableDefs = ugly.DEFNODE('ConfoundVariableDefs', null, {}, ugly.AST_Var);
+    
     var AST_ConfoundString = ugly.DEFNODE('ConfoundString', 'value', {
         $documentation: "A confounding string literal",
         $propdoc: {
@@ -32,6 +34,52 @@ ConfoundJS.sourceTransform = (function() {
         }
     }, ugly.AST_Constant);
     
+    
+    ///////////////////////////////////////////////////////////////////////////
+    ////  Top Level Variables
+    ///////////////////////////////////////////////////////////////////////////
+    var confoundVariables = [];
+    var addConfoundVariable = function(vardef, toplevel) {
+        
+        var defs = toplevel.body.filter(function(x) { return x instanceof AST_ConfoundVariableDefs; });
+        
+        if(defs.length === 0) {
+            defs = new AST_ConfoundVariableDefs({ definitions: [] });
+            toplevel.body.unshift(defs);
+        } else {
+            defs = defs[0];
+        }
+        
+        defs.definitions.push(vardef);
+        confoundVariables.push(vardef.name.name);
+    };
+    
+    ///////////////////////////////////////////////////////////////////////////
+    ////  Re-reference Globals
+    ///////////////////////////////////////////////////////////////////////////
+    var rereferenceGlobals = new ugly.TreeTransformer(null, function(node) {
+    
+        if(node instanceof ugly.AST_Toplevel) {
+        
+            var globalRef = new ugly.AST_VarDef({
+                name: new ugly.AST_SymbolVar({ name: '__counfoundjs_global' }),
+                value: new ugly.AST_This()
+            });
+            
+            addConfoundVariable(globalRef, node);
+        }
+        
+        if(node instanceof ugly.AST_SymbolRef) {
+            var defn = node.thedef;
+            if(defn && defn.global && defn.undeclared) {
+                return new ugly.AST_Dot({
+                    property: node.name,
+                    expression: new ugly.AST_SymbolRef({ name: '__counfoundjs_global' })
+                });
+            }
+        }
+        
+    });
     
     ///////////////////////////////////////////////////////////////////////////
     ////  Transform Dot Notations
@@ -65,7 +113,7 @@ ConfoundJS.sourceTransform = (function() {
         var idx = stringMap[str];
         
         var tableRef = new ugly.AST_SymbolRef({
-            name: '__counfoundjs_string_table',
+            name: '__counfoundjs_string_table'
         });
         
         var indexVal = new ugly.AST_Number({ value: idx });
@@ -87,16 +135,13 @@ ConfoundJS.sourceTransform = (function() {
                 tableElms.push( new ugly.AST_String({ value: stringTable[i] }) );
             }
             
-            var table = new ugly.AST_Var({
-                definitions: [
-                    new ugly.AST_VarDef({
-                        name: new ugly.AST_SymbolVar({ name: '__counfoundjs_string_table' }),
-                        value: new ugly.AST_Array({ elements: tableElms })
-                    })
-                ]
+            var table = new ugly.AST_VarDef({
+                name: new ugly.AST_SymbolVar({ name: '__counfoundjs_string_table' }),
+                value: new ugly.AST_Array({ elements: tableElms })
             });
             
-            node.body.unshift(table);
+            addConfoundVariable(table, node);
+            
             return node;
         }
         if (node instanceof ugly.AST_String) {
@@ -177,6 +222,7 @@ ConfoundJS.sourceTransform = (function() {
     ////  Source Transformation
     ///////////////////////////////////////////////////////////////////////////
     var reset = function() {
+        confoundVariables = [];
         stringTable = [];
         stringMap = {};
     };
@@ -222,6 +268,10 @@ ConfoundJS.sourceTransform = (function() {
                 transform('Minifying', ugly.Compressor());
             }
             
+            if(options.rereferenceGlobals) {
+                transform('Re-referencing Globals', rereferenceGlobals);
+            }
+            
             if(options.transformDotNotation) {
                 transform('Transforming dot notations', dotToSub);
             }
@@ -241,15 +291,15 @@ ConfoundJS.sourceTransform = (function() {
             if(options.transformNumbers) {
                 shouldUseOptimalNumbers = options.optimalNumbers;
                 transform('Obscuring numbers', numberTransformer);
-            }
+            }            
             
             step('Calculating scope', do_calculate_scope);
             
             if(options.mangleVariables) {
                 step('Mangling variables', function() {
-                    if(options.liftStrings) {
-                        // Allow the string table to be mangled
-                        ast.variables.get('__counfoundjs_string_table').global = false;
+                    // Make any confound variables non-global
+                    for(var i = 0; i < confoundVariables.length; i++) {
+                        ast.variables.get(confoundVariables[i]).global = false;
                     }
                     ast.mangle_names();
                 });

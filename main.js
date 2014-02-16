@@ -24,6 +24,7 @@ $(function() {
             var options = {
                 useSourceTransform: checkbox('useSourceTransform'),
                 minifySource: checkbox('minifySource'),
+                rereferenceGlobals: checkbox('rereferenceGlobals'),
                 transformDotNotation: checkbox('transformDotNotation'),
                 liftStrings: checkbox('liftStrings'),
                 transformStrings: checkbox('transformStrings'),
