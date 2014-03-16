@@ -1,6 +1,13 @@
 
 $(function() {
-
+    
+    if(!window['ConfoundJS']) {
+        $('#demo-form').hide();
+        return;
+    } else {
+        $('#needsbuild').hide();
+    }
+    
     var $jsIn = $('#jsInput'),
         $jsOut = $('#jsOutput');
         

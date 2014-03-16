@@ -11,8 +11,8 @@
     <title>ConfoundJS</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="web-assets/css/bootstrap.min.css" rel="stylesheet">
-    <link href="web-assets/css/extras.css" rel="stylesheet">
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/extras.css" rel="stylesheet">
 
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -30,7 +30,10 @@
           <h1>ConfoundJS</h1>
         </div>
         <p class="lead">An experiment in JavaScript obfuscation.</p>
-        <form role="form">
+        
+        <div class="alert alert-danger" id="needsbuild"><strong>confound.js</strong> not found. Have you tried running the build script?</div>
+        
+        <form role="form" id="demo-form">
             <div class="form-group">
                 <label for="jsInput">Input JavaScript Source:</label>
                 <textarea class="form-control" id="jsInput">alert('Hello World');</textarea>
@@ -66,21 +69,11 @@
     </div>
 
     <!-- Boring Bootstrap/jQuery -->
-    <script src="web-assets/js/jquery-2.0.3.min.js"></script>
-    <script src="web-assets/js/bootstrap.min.js"></script>
+    <script src="assets/js/jquery-2.0.3.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
     
-    <!-- CounfoundJS dependencies -->
-    <script src="lib/underscore.js"></script>
-    <script src="lib/uglify.js"></script>
-    <script src="lib/promise.js"></script>
-    
-    <!-- ConfoundJS modules -->
-    <script src="src/numbers.js"></script>
-    <script src="src/bitpack.js"></script>
-    <script src="src/strings.js"></script>
-    <script src="src/runtime.js"></script>
-    <script src="src/sourcetransform.js"></script>
-    <script src="src/api.js"></script>
+    <!-- CounfoundJS -->
+    <script src="../confound.js"></script>
     
     <!-- This example/test app -->
     <script src="main.js"></script>
