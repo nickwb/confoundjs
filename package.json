@@ -1,0 +1,46 @@
+{
+  "name": "confoundjs",
+  "description": "An experiment in JavaScript obfuscation",
+  "version": "0.0.1",
+  "homepage": "https://github.com/nickwb/confoundjs",
+  "keywords": [
+    "obfuscation",
+    "uglifyjs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nickwb/confoundjs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nickwb/confoundjs/issues"
+  },
+  "author": {
+    "name": "Nick Young",
+    "email": "nick@nickwb.net"
+  },
+  "contributors": [
+    {
+      "name": "Nick Young",
+      "email": "nick@nickwb.net"
+    }
+  ],
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://github.com/nickwb/confoundjs/blob/master/LICENSE"
+    }
+  ],
+  "files": [
+    "src/"
+  ],
+  "main": "src/api.js",
+  "engines": {
+    "node": "*"
+  },
+  "dependencies": {
+    "underscore": "~1.6.0",
+    "promise": "~4.0.0",
+    "uglifyjs": "~2.3.6"
+  },
+  "devDependencies": {}
+}
