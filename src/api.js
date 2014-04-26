@@ -1,9 +1,18 @@
 var Promise = require('promise'),
     _ = require('underscore'),
+    numbers = require('./numbers'),
+    strings = require('./strings'),
+    bitpack = require('./bitpack'),
     runtime = require('./runtime'),
     sourceTransform = require('./sourceTransform');
 
-var ConfoundJS = {};
+var ConfoundJS = {
+    numbers: numbers,
+    strings: strings,
+    bitpack: bitpack,
+    sourceTransform: sourceTransform
+};
+
 var optionsMap = ConfoundJS.options = {};
 
 ConfoundJS.generate = function(payload, options) {

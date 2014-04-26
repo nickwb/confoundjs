@@ -161,7 +161,7 @@ runtime.writeUnpacker = function() {
     js += '#cipherBlock=#block=#payload[#i];';
     js += '#block=#block^#key;';
     // Calculate the number of characters in this block
-    js += '#chars=(#i-#payload[' + stateTable.getReference('strLength') + ']==+!#payload)' +
+    js += '#chars=(#payload[' + stateTable.getReference('strLength') + ']-#i==+!!#payload)' +
             '?#lastBlockLength' +
             ':(' + numbers.getSymbolic(bitpack.packWidth) + ');';
     // Initialise j = 0 and Iterate up to the block length
@@ -174,7 +174,7 @@ runtime.writeUnpacker = function() {
     js += '#key=(#cipherBlock>>(' + numbers.getSymbolic(3) + '))^#key';
     js += '}'; // End outer loop
     
-    // Get the function constructor from array.join.constructor
+    // Get the function constructor from somewhere
     js += runtime.writeFunctionConstructor();
     // Call the function constructor
     // Try to "hide" the passing of the result to the eval

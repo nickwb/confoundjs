@@ -47,7 +47,11 @@ bitpack.pack = function(str, key) {
         if(c < CHAR_MIN || c > CHAR_MAX) { throw 'Invalid character in input.'; }
     }
     
-    var result = [ str.length % PACK_WIDTH ];
+    // The first array of the result is the number of characters in the final block
+    // If the length is event divisible by the pack width (length % PACK_WIDTH) == 0
+    // Then the length of the final block is equal to the PACK_WIDTH
+    var result = [ (str.length % PACK_WIDTH) || PACK_WIDTH ];
+    
     for(var i = 0; i < str.length; i+=PACK_WIDTH) {
         block = packer(str.substr(i, PACK_WIDTH)) ^ key;
         key = spinKey(key, block);
