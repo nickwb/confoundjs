@@ -57,6 +57,10 @@ var variableMap = function() {
         var pattern = /#([a-zA-Z]+)~?/g;
         return js.replace(pattern, function(m, name) { return map[name]; });
     };
+    
+    this.getNames = function() {
+        return _.keys(map);
+    };
 };
 
 var stateTable = function() {
@@ -144,6 +148,31 @@ runtime.writeFunctionConstructor = function() {
     return '(' + path + ')';
 };
 
+
+runtime.writeNoOp = function(variables) {
+    var varNames = variables.getNames();
+    var operators = ['=', '==', '!=', '<', '>'];
+    
+    var leftSide = varNames[Math.floor(Math.random() * varNames.length)],
+        rightSide = varNames[Math.floor(Math.random() * varNames.length)],
+        operator = operators[Math.floor(Math.random() * operators.length)];
+        
+    return '#' + leftSide + operator + '#' + rightSide;
+};
+
+runtime.writeEvalArguments = function() {
+    var choices = [
+        '(#lastBlockLength==#payload[+![]]?#result:#key)',
+        '(#lastBlockLength!=#payload[+![]]?#key:#result)',
+        '(#chars==#lastBlockLength?#result:#key)',
+        '(#chars!=#lastBlockLength?#key:#result)',
+        '(#j==#lastBlockLength?#key:#result)',
+        '(#j!=#lastBlockLength?#key:#result)'
+    ];
+    
+    return choices[Math.floor(Math.random() * choices.length)];
+};
+
 runtime.writeUnpacker = function() {
     var variables = new variableMap();
         variables.make('payload', 'key', 'i', 'j', 'chars', 'block', 'cipherBlock', 'result', 'lastBlockLength');
@@ -151,38 +180,45 @@ runtime.writeUnpacker = function() {
     
     var js = '';
     
-    // The first three arguments are the required parameters
+    // The first two arguments are the required parameters
     js += 'function(#payload,#key,#i,#j,#chars,#block,#cipherBlock,#result,#lastBlockLength){';
     js += 'for(' +
             // Initialise i = 1, result = '', lastBlockLength=payload[0]
             '#i=+!!#payload,#result=[]+[],#lastBlockLength=#payload[+![]];' +
             '#i<#payload[' + stateTable.getReference('strLength') + '];' +
             '#i++){';
+    // Extract one block from the payload
     js += '#cipherBlock=#block=#payload[#i];';
+    // Decrypt the block
     js += '#block=#block^#key;';
     // Calculate the number of characters in this block
+    // If (payloadArray.length - index) == 1, then we are on the final block and we should use the last block length
     js += '#chars=(#payload[' + stateTable.getReference('strLength') + ']-#i==+!!#payload)' +
             '?#lastBlockLength' +
             ':(' + numbers.getSymbolic(bitpack.packWidth) + ');';
+    // Extract each of the characters in the block
     // Initialise j = 0 and Iterate up to the block length
     js += 'for(#j=+!#key;#j<#chars;#j++){';
-    // Get 1 character from the block
+    // Extract 1 character from the block
+    // Take the lower 7 bits and convert to a character
     js += '#result+=' + stateTable.getReference('fnFromCharCode') +
             '(#block&(' + numbers.getSymbolic(127) + '));';
+    // Shift the 7-bit character from the block, leaving the remaining characters
     js += '#block=#block>>(' + numbers.getSymbolic(7) + ');';
     js += '}'; // End inner loop
-    js += '#key=(#cipherBlock>>(' + numbers.getSymbolic(3) + '))^#key';
+    // Spin the key for the next block. See spinKey in bitpack for reference source.
+    js += '#key=(#cipherBlock^#key)^((#cipherBlock>>(' + numbers.getSymbolic(3) + '))^#key)';
     js += '}'; // End outer loop
     
     // Get the function constructor from somewhere
     js += runtime.writeFunctionConstructor();
     // Call the function constructor
     // Try to "hide" the passing of the result to the eval
-    js += '(#lastBlockLength==#payload[+![]]?#result:#key)'
+    js += runtime.writeEvalArguments();
     // Call the resulting function immediately
     js += '();';
-    // Noop at the end of the function so the final statement isn't an eval
-    js += '#payload=![]';
+    // Insert a noop at the end of the function, so the final statement in the function isn't an obvious function call
+    js += runtime.writeNoOp(variables);
     js += '}';
     
     js = variables.substitute(js);

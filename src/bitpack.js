@@ -35,7 +35,7 @@ bitpack.randomKey = function() {
 };
 
 var spinKey = function(key, cipherBlock) {
-    return (cipherBlock >> 3) ^ key;
+    return (cipherBlock ^ key) ^ ((cipherBlock >> 3) ^ key);
 };
 
 bitpack.pack = function(str, key) {
