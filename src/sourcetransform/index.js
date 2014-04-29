@@ -1,7 +1,7 @@
 var Promise = require('promise'),
     ugly = require('uglifyjs'),
-    numbers = require('./numbers'),
-    strings = require('./strings');
+    numbers = require('../numbers'),
+    strings = require('../strings');
 
 var sourcetransform = {};
 
@@ -56,7 +56,7 @@ var rereferenceGlobals = new ugly.TreeTransformer(null, function(node) {
     if(node instanceof ugly.AST_Toplevel) {
     
         var globalRef = new ugly.AST_VarDef({
-            name: new ugly.AST_SymbolVar({ name: '__counfoundjs_global' }),
+            name: new ugly.AST_SymbolVar({ name: '__confoundjs_global' }),
             value: new ugly.AST_This()
         });
         
@@ -68,7 +68,7 @@ var rereferenceGlobals = new ugly.TreeTransformer(null, function(node) {
         if(defn && defn.global && defn.undeclared) {
             return new ugly.AST_Dot({
                 property: node.name,
-                expression: new ugly.AST_SymbolRef({ name: '__counfoundjs_global' })
+                expression: new ugly.AST_SymbolRef({ name: '__confoundjs_global' })
             });
         }
     }
@@ -107,7 +107,7 @@ var getStringReference = function(str, node) {
     var idx = stringMap[str];
     
     var tableRef = new ugly.AST_SymbolRef({
-        name: '__counfoundjs_string_table'
+        name: '__confoundjs_string_table'
     });
     
     var indexVal = new ugly.AST_Number({ value: idx });
@@ -130,7 +130,7 @@ var stringLifter = new ugly.TreeTransformer(null, function(node){
         }
         
         var table = new ugly.AST_VarDef({
-            name: new ugly.AST_SymbolVar({ name: '__counfoundjs_string_table' }),
+            name: new ugly.AST_SymbolVar({ name: '__confoundjs_string_table' }),
             value: new ugly.AST_Array({ elements: tableElms })
         });
         
